@@ -1,0 +1,139 @@
+{
+  "details_available": true,
+  "provenance": "performance_artifact",
+  "available_metric_ids": [
+    "annual_return",
+    "annual_volatility",
+    "avg_holding_bars",
+    "... (33)"
+  ],
+  "available_scopes": [
+    "test",
+    "trial/0/train",
+    "trial/1/train",
+    "... (16)"
+  ],
+  "default_scope": "test",
+  "selected_train_scope": "trial/1/train",
+  "detail_error": null,
+  "success": true,
+  "run_id": "f245f73b6ebb4c4b9c06b2ee08457339",
+  "manifest_hash": "56739a0984f9e0a26159d66451ab26b6b949896a855ab7b8c37d0c60b1f48567",
+  "scope": "trial/2/train",
+  "kind": "backtest",
+  "mode": "signal",
+  "split": "train",
+  "fold_index": null,
+  "trial_index": 2,
+  "parameters": {
+    "k_period": 9,
+    "oversold": 0
+  },
+  "metrics": {
+    "annual_return": 0.0,
+    "annual_volatility": 0.0,
+    "avg_holding_bars": null,
+    "calmar_ratio": null,
+    "daily_max_drawdown": 0.0,
+    "daily_pnl_max": 0.0,
+    "daily_pnl_mean": 0.0,
+    "daily_pnl_median": 0.0,
+    "daily_pnl_min": 0.0,
+    "daily_pnl_std": 0.0,
+    "max_drawdown": 0.0,
+    "max_drawdown_amount": 0.0,
+    "monthly_pnl_max": 0.0,
+    "monthly_pnl_mean": 0.0,
+    "monthly_pnl_median": 0.0,
+    "monthly_pnl_min": 0.0,
+    "monthly_pnl_std": 0.0,
+    "monthly_trades_mean": 0.0,
+    "monthly_volume_mean": 0.0,
+    "n_days": 182,
+    "n_months": 6,
+    "open_trades": 0,
+    "profit_factor": null,
+    "sharpe_ratio": null,
+    "sortino_ratio": null,
+    "total_fees": 0.0,
+    "total_pnl": 0.0,
+    "total_return": 0.0,
+    "total_slippage": null,
+    "total_trades": 0,
+    "total_volume": 0.0,
+    "trade_expectancy": null,
+    "win_rate": null
+  },
+  "metadata": {
+    "calculation_fallbacks": {},
+    "execution_context": {
+      "end_date": "2024-06-30T23:59:59.999999",
+      "fees": 0.0006,
+      "init_cash": 10000.0,
+      "mode": "signal",
+      "monthly_max_loss": 1500.0,
+      "periods_per_year": 365.0,
+      "position_size": null,
+      "random_seed": null,
+      "re_entry_after_sl": true,
+      "required_return": 0.0,
+      "risk_free_rate": 0.0,
+      "signal_as_position": false,
+      "slippage": 0.0005,
+      "start_date": "2024-01-01T00:00:00",
+      "stop_loss": null,
+      "symbol": "BTC/USDT",
+      "take_profit": null,
+      "timeframe": "1h"
+    },
+    "mode": "signal",
+    "observations": {
+      "account_history_availability": "available",
+      "account_history_mark": "bar_close",
+      "accounting": "vectorbt_generic",
+      "bar_count": 4368,
+      "...": "(more)"
+    },
+    "providers": "(per-metric provider map)",
+    "schema_version": 1,
+    "settings": {
+      "calendar_timezone": "UTC",
+      "calmar_drawdown_sampling": "observed_daily",
+      "cost_model": "commission_and_slippage_adjusted_fill_prices",
+      "...": "(19 keys)"
+    },
+    "strategy_parameters": {
+      "d_period": 3,
+      "k_period": 9,
+      "overbought": 100.0,
+      "oversold": 0.0,
+      "smooth_k": 3
+    },
+    "unavailable": {
+      "avg_holding_bars": "no_trades",
+      "calmar_ratio": "zero_denominator",
+      "profit_factor": "no_trades",
+      "sharpe_ratio": "zero_denominator",
+      "sortino_ratio": "zero_denominator",
+      "total_slippage": "embedded_in_fill_prices",
+      "trade_expectancy": "no_trades",
+      "win_rate": "no_trades"
+    }
+  },
+  "definitions": {
+    "sharpe_ratio": {
+      "id": "sharpe_ratio",
+      "unit": "ratio",
+      "category": "risk",
+      "provider": "quantstats",
+      "description": "Annualized excess daily return divided by sample standard deviation. Requires a recognized bar frequency of one day or finer; coarser or unknown bars cannot establish daily equity observations or allocate PnL across calendar boundaries.",
+      "summary": true,
+      "optimization_direction": "maximize",
+      "modes": [
+        "signal"
+      ],
+      "requires_annualization": true
+    },
+    "...": "(33 entries, one per metric)"
+  }
+}

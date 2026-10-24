@@ -1,0 +1,19 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"success\": true,\n  \"plan_id\": \"f245f73b6ebb4c4b9c06b2ee08457339\",\n  \"job_id\": \"f245f73b6ebb4c4b9c06b2ee08457339\",\n  \"manifest_hash\": \"56739a0984f9e0a26159d66451ab26b6b949896a855ab7b8c37d0c60b1f48567\",\n  \"message\": \"已依使用者確認的設定提交工作；可查詢工作狀態。\"\n}"
+    }
+  ],
+  "structuredContent": {
+    "result": {
+      "success": true,
+      "plan_id": "f245f73b6ebb4c4b9c06b2ee08457339",
+      "job_id": "f245f73b6ebb4c4b9c06b2ee08457339",
+      "manifest_hash": "56739a0984f9e0a26159d66451ab26b6b949896a855ab7b8c37d0c60b1f48567",
+      "message": "已依使用者確認的設定提交工作；可查詢工作狀態。"
+    }
+  },
+  "isError": false,
+  "resultType": "complete"
+}

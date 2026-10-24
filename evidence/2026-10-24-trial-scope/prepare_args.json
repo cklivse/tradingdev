@@ -1,0 +1,61 @@
+{
+  "strategy_id": "kd_crossover",
+  "symbol": "BTC/USDT",
+  "timeframe": "1h",
+  "param_ranges": {
+    "k_period": [
+      9,
+      14,
+      21,
+      28,
+      35
+    ],
+    "oversold": [
+      20,
+      10,
+      0
+    ]
+  },
+  "optimization_metric": "sharpe_ratio",
+  "train_start": "2024-01-01",
+  "train_end": "2024-06-30",
+  "test_start": "2024-07-01",
+  "test_end": "2024-12-31",
+  "parameters": {
+    "overbought": 100
+  },
+  "minimum_history_bars": 45,
+  "presentation": {
+    "title": "KD 只做多參數搜尋：plateau 失敗切片驗證",
+    "summary": "以 KD 交叉策略在 BTC/USDT 1 小時線上搜尋 k_period 與 oversold 共 15 組參數。overbought 固定為 100，因 %K 不會超過 100，做空條件恆不成立，全部只做多。oversold=0 的 5 組因 %K 不會低於 0 而不會進場，預期零交易、Sharpe 未定義，用來驗證失敗試驗在 trial scope 中的形式。2024 上半年訓練、下半年測試。",
+    "parameter_descriptions": {
+      "/config/k_period": {
+        "label": "%K 回看期間",
+        "description": "計算隨機指標 %K 時回看的 K 棒數，越長越平滑、反應越慢。",
+        "unit": "根 K 棒"
+      },
+      "/config/d_period": {
+        "label": "%D 平滑期間",
+        "description": "%D 是 %K 的移動平均；這裡用來和 %K 交叉判斷進出場。",
+        "unit": "根 K 棒"
+      },
+      "/config/smooth_k": {
+        "label": "%K 平滑期間",
+        "description": "原始 %K 先做的移動平均期間，用來降低雜訊。",
+        "unit": "根 K 棒"
+      },
+      "/config/overbought": {
+        "label": "超買門檻（做空）",
+        "description": "死亡交叉且 %K 高於此值才做空。固定為 100，%K 不會超過 100，所以不會做空。"
+      },
+      "/config/oversold": {
+        "label": "超賣門檻（做多）",
+        "description": "黃金交叉且 %K 低於此值才做多。設為 0 時 %K 不會低於 0，所以不會進場。"
+      },
+      "/fit_config": {
+        "label": "策略內建調參設定",
+        "description": "KD 策略自己在訓練資料上做格點搜尋的設定。本次未提供（空值），策略不會自行調參，只使用上面搜尋格點給定的參數。"
+      }
+    }
+  }
+}
