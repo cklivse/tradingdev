@@ -5,18 +5,26 @@ Outputs (in demo_output/):
                     true plateau vs. false spike heatmaps
   plateau_gridindex_table.md
                     plateau statistics of both cases
-  kd_inference.md   inference statistics of the latest cached KD backtest
+  kd_inference.md   inference statistics of the pinned KD backtest pickle,
+                    with the pickle's SHA-256
   kd_equity.png     equity curve and drawdown of that backtest
   comparison_forest.png
                     daily Sharpe intervals of three KD parameter sets and
                     their paired differences
 
-Run: uv run python scripts/demo_statistics.py
+Run: uv run python scripts/demo_statistics.py [--kd-pickle PATH]
+
+Without --kd-pickle the KD input is the pinned KD_SOURCE, and the script
+refuses to run unless that file exists with exactly KD_SOURCE_SHA256, so a
+re-run always reads the input the committed kd_inference.md was made from.
+An explicit --kd-pickle is used as given; its hash goes into the report.
 """
 
 from __future__ import annotations
 
+import argparse
 import copy
+import hashlib
 import itertools
 import math
 import pickle
@@ -59,6 +67,10 @@ if TYPE_CHECKING:
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "demo_output"
 CACHE_DIR = ROOT / "workspace" / "data" / "processed" / "cache"
+# The input of the committed kd_inference.md. The cache is not versioned, so
+# the content hash, not the file name, is what identifies it.
+KD_SOURCE = CACHE_DIR / "cd03bf19459b48af.pkl"
+KD_SOURCE_SHA256 = "b9493b6bf5f1f171fee472812a9c6f7aab7a58f5d93fc6644386211d5b6febd0"
 KD_CONFIG = ROOT / "src/tradingdev/domain/strategies/bundled/kd_strategy/config.yaml"
 KD_VARIANTS = {
     "KD(9, 3, 3)": {"k_period": 9, "d_period": 3, "smooth_k": 3},
@@ -268,15 +280,32 @@ def write_plateau_table(summaries: dict[str, PlateauSummary], path: Path) -> Non
 # ---------------------------------------------------------------- KD run
 
 
-def latest_cache() -> Path:
-    pickles = sorted(CACHE_DIR.glob("*.pkl"), key=lambda p: p.stat().st_mtime)
-    if not pickles:
-        raise SystemExit(f"no cached pickle in {CACHE_DIR}")
-    return pickles[-1]
+def sha256_of(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def resolve_kd_source(explicit: Path | None) -> tuple[Path, str]:
+    """Return the KD pickle to read and its SHA-256, never guessing a file."""
+    if explicit is not None:
+        if not explicit.is_file():
+            raise SystemExit(f"--kd-pickle {explicit} does not exist")
+        return explicit, sha256_of(explicit)
+    if not KD_SOURCE.is_file():
+        raise SystemExit(
+            f"pinned KD input {KD_SOURCE} is missing; pass --kd-pickle PATH "
+            "to report on another backtest"
+        )
+    digest = sha256_of(KD_SOURCE)
+    if digest != KD_SOURCE_SHA256:
+        raise SystemExit(
+            f"pinned KD input {KD_SOURCE} has SHA-256 {digest}, expected "
+            f"{KD_SOURCE_SHA256}; pass --kd-pickle PATH to use it anyway"
+        )
+    return KD_SOURCE, digest
 
 
 def write_kd_inference(
-    result: Any, snapshot: dict[str, Any], source: Path, path: Path
+    result: Any, snapshot: dict[str, Any], source: Path, digest: str, path: Path
 ) -> None:
     equity = np.asarray(result.equity_curve, dtype=float)
     stamps = result.timestamps
@@ -315,6 +344,7 @@ def write_kd_inference(
 
     strategy = snapshot.get("strategy", {})
     bt = snapshot.get("backtest", {})
+    shown = source.relative_to(ROOT) if source.is_relative_to(ROOT) else source
     engine_sharpe = float(result.metrics["sharpe_ratio"])
     block = interval.block_size if interval else "n/a"
     ci = f"[{interval.lower:.2f}, {interval.upper:.2f}]" if interval else "n/a"
@@ -325,10 +355,12 @@ def write_kd_inference(
     lines = [
         "# KD strategy: inference statistics",
         "",
-        f"Source: `{source.relative_to(ROOT)}` — strategy `{strategy.get('id')}` "
+        f"Source: `{shown}` — strategy `{strategy.get('id')}` "
         f"{strategy.get('parameters')}, {bt.get('symbol')} {bt.get('timeframe')}, "
         f"{stamps[0]:%Y-%m-%d} to {stamps[-1]:%Y-%m-%d}, init cash "
         f"{result.init_cash:,.0f}.",
+        "",
+        f"Source SHA-256: `{digest}`",
         "",
         "## Sample size",
         "",
@@ -538,6 +570,13 @@ def plot_comparison_forest(results: dict[str, Any], path: Path) -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument(
+        "--kd-pickle",
+        type=Path,
+        help="KD backtest pickle to report on (default: the pinned KD_SOURCE)",
+    )
+    source, digest = resolve_kd_source(parser.parse_args().kd_pickle)
     OUTPUT_DIR.mkdir(exist_ok=True)
     outputs = {
         "plateau_png": OUTPUT_DIR / "plateau_gridindex.png",
@@ -549,11 +588,14 @@ def main() -> None:
     summaries = plot_plateau(plateau_cases(), outputs["plateau_png"])
     write_plateau_table(summaries, outputs["plateau_md"])
 
-    source = latest_cache()
     with source.open("rb") as handle:
         pipeline = pickle.load(handle)  # noqa: S301 - local trusted cache
     write_kd_inference(
-        pipeline.backtest_result, pipeline.config_snapshot, source, outputs["kd_md"]
+        pipeline.backtest_result,
+        pipeline.config_snapshot,
+        source,
+        digest,
+        outputs["kd_md"],
     )
     plot_kd_equity(pipeline.backtest_result, outputs["kd_png"])
     plot_comparison_forest(run_kd_variants(), outputs["comparison_png"])

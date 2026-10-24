@@ -78,12 +78,13 @@ $\varepsilon^{B}_{1,3}$ 仍然會被抽出，只是被 2.0 覆蓋，所以不影
 
 ### 2. `kd_equity.png`：真實回測（讀取快取 pickle）
 
-`latest_cache()`（`scripts/demo_statistics.py`）依**檔案修改時間**挑選
-`workspace/data/processed/cache/*.pkl` 中最新的一個；它不檢查 pickle 的內容是不是 KD 策略。
+`scripts/demo_statistics.py` 的 KD 輸入是**釘死的**：預設讀 `KD_SOURCE`
+（`workspace/data/processed/cache/cd03bf19459b48af.pkl`），並先核對檔案的 SHA-256 等於
+`KD_SOURCE_SHA256`（`b9493b6b…6febd0`）；檔案不存在或雜湊不符就直接停止，不會改挑別的檔案。
+要對另一份回測產生報告，必須用 `--kd-pickle PATH` 明確指定。`kd_inference.md` 會記下實際讀取的
+pickle 路徑與 SHA-256，讀者可以用 `sha256sum` 確認手上的輸入和報告是同一份。
 
-快取目錄目前有兩個檔案：`cd03bf19459b48af.pkl`（mtime 2026-10-05 06:33:29 UTC）與
-`e9d1e13c2eb25909.pkl`（mtime 2026-09-24 09:21:07 UTC）。本次以 `cmp` 確認兩者**逐位元組相同**，
-腳本選中的是前者。
+`e9d1e13c2eb25909.pkl` 與 `cd03bf19459b48af.pkl` 逐位元組相同（SHA-256 一樣），內容等價。
 
 以下各值都是從 pickle 實際讀出：
 
@@ -583,8 +584,10 @@ $$
 9. **小時與日頻 Sharpe**：`sharpe.py:7-13` 指出，小時報酬有自相關，用 $\sqrt{P}$ 年化會有偏差。
 10. **最後一天只有 1 根 K 棒**：2024-12-31 的「日報酬」只涵蓋 1 小時，但仍算成 1 個觀測值（見 2.1）。
 11. **資料來源與 market_type 是推定的**：pickle 沒有記錄這兩項（見第一節）。
-12. **`latest_cache()` 不檢查內容**：它只挑 mtime 最新的 pickle。之後只要產生任何較新的 pickle，
-    `kd_equity.png` 與 `kd_inference.md` 就會改用那份資料，而圖的標題文字仍然寫著 KD／BTC/USDT 1h。
+12. **輸入以雜湊釘死，但 pickle 本身不進 Git**：預設輸入必須符合 `KD_SOURCE_SHA256`，否則腳本停止。
+    沒有這份 pickle 的人無法重跑 `kd_inference.md`；重現三個關鍵數字可改用
+    `tests/domain/statistics/fixtures/kd_btcusdt_1h_2024/` 的 fixture（由測試固定）。
+    用 `--kd-pickle` 指定別的回測時，圖的標題文字仍然寫著 KD／BTC/USDT 1h。
 13. **`total_volume` 在合併前後的定義不同**：見 2.7 第 4 點。腳本因此改從交易紀錄推導成本，
     不依賴該欄位。
 
@@ -628,10 +631,9 @@ uv run python scripts/demo_plateau.py
 1. 兩支腳本的輸出檔名不重疊，執行順序不影響結果。`demo_statistics.py` 的網格索引版（軸標籤為網格索引、
    配色為 `Blues`）寫入 `plateau_gridindex.png` 與 `plateau_gridindex_table.md`；lookback／threshold 版的
    `plateau_demo.png` 與 `plateau_table.md` 只由 `demo_plateau.py` 產生。
-2. `kd_equity.png` 與 `kd_inference.md` 讀取的是 mtime 最新的 pickle。重現前請確認
-   `workspace/data/processed/cache/` 中最新的仍是 `cd03bf19459b48af.pkl`（或與它相同內容的
-   `e9d1e13c2eb25909.pkl`）。依目前程式碼，`BacktestService.run_raw_config` 不會寫入這個目錄：
-   本次重跑三組回測前後，目錄內容都沒有改變。
+2. `kd_equity.png` 與 `kd_inference.md` 讀取釘死的 `cd03bf19459b48af.pkl`，並核對它的 SHA-256；
+   快取目錄中新增其他 pickle 不會改變輸入。依目前程式碼，`BacktestService.run_raw_config` 不會寫入
+   這個目錄：重跑三組回測前後，目錄內容都沒有改變。
 3. `comparison_forest.png` 會用目前的程式碼重新執行三次回測，需要能取得 BTC/USDT 1h 的 2024 資料
    （本機已有 `workspace/data/processed/btcusdt_1h_2024.parquet`）。本次用合併後的程式碼重跑，
    圖上所有標註數字都與現有圖檔一致（見 2.12、2.13）。但本次沒有實際重新產生 PNG 檔，
