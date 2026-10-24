@@ -1,185 +1,191 @@
 # feat: add domain statistics for strategy inference, with the branch synced to Python 3.14 / pandas 3
 
-**分支：** 這個 PR 的來源分支是 `feat/stats-py314`。`feat/stats-on-latest` 停在 `814b05a`，是同步到 Python 3.14 / pandas 3 之前保留的退路，不要拿它開 PR。合併基準是 upstream `main` 的 `3fa0852`，PR 差異只含本分支自己的檔案：統計模組與測試、demo 腳本與產出、`docs/statistics_leaderboard_integration.md`、`tests/mcp/test_optimization_failed_trials.py`、`scripts/validate_run.py`，以及 `pyproject.toml`／`uv.lock` 中的 `arch`。
+**Branches:** this PR comes from `feat/stats-py314`. `feat/stats-on-latest` stays at `814b05a` as the fallback from before the sync to Python 3.14 / pandas 3; do not open a PR from it. The merge base is upstream `main` at `3fa0852`, so the diff contains only this branch's own files: the statistics modules and their tests, the demo scripts and outputs, `docs/statistics_leaderboard_integration.md`, `tests/mcp/test_optimization_failed_trials.py`, `scripts/validate_run.py`, and `arch` in `pyproject.toml` / `uv.lock`.
 
-## 這個分支做了什麼
+**About the 3 deleted lines in `uv.lock`:** the `uv.lock` diff is +130/-3.
 
-新增 `src/tradingdev/domain/statistics/`，只吃呼叫端給的權益曲線、時間戳、交易紀錄或報酬序列，不讀 run、artifact 或快取，也不參考引擎自己的 `metrics`，因此可以拿來交叉檢查引擎回報的數字。
+- The additions are arch 8.0.0 and its dependencies: statsmodels, patsy, formulaic, interface-meta and wrapt.
+- The 3 deleted lines are simplified platform markers: httpcore2's on h11 and truststore, and pexpect's on ptyprocess. The packages that depend on them already carry the same markers, so the resolution is equivalent; the difference comes from the uv version.
+- `uv lock --check` passes.
 
-- **periods**：權益曲線在 UTC 日／月邊界上的收盤權益、損益與報酬是多少？沒有資料的期間直接省略、不補零，所以各期損益加總一定等於整段損益。
-- **performance**：只看原始輸出，這次執行的報酬、波動、回撤與勝率是多少？用來檢查引擎自己報的數字對不對。
-- **breakeven**：在現有的盈虧比下，勝率要多少才能打平？實際勝率離那條線有多遠？成交名目（進場加出場兩腿）與周轉率又是多少？
-- **sharpe**：日報酬的年化 Sharpe 有多可信？stationary bootstrap 給信賴區間；PSR 給「真實 Sharpe > 0」的機率；DSR 修正 N 次試驗挑最好那個造成的選擇偏誤。
-- **comparison**：同一段資料上的兩個策略差異是否顯著？做法是對齊時間軸後用同一組 block 索引做 paired bootstrap，保留兩者報酬的共變異。
-- **plateau**：最佳參數是站在一片表現都不錯的平原上，還是網格裡孤立的尖峰？鄰域以網格索引的 Chebyshev 距離定義。
-- **benchmark**：策略和買進持有比較起來如何？Sharpe 差異交給 comparison；這裡回答策略和標的怎麼共動（beta 是平均淨曝險，不是 CAPM 的系統風險）。
+## What this branch does
 
-另外：`arch>=8.0.0`（stationary bootstrap 與 Politis–White 最適 block 長度），以及 `scripts/demo_statistics.py`、`scripts/demo_plateau.py`、`scripts/validate_run.py` 和已提交的 `demo_output/`。
+It adds `src/tradingdev/domain/statistics/`. The modules take only what the caller passes in (equity curves, timestamps, trade records or return series). They never read runs, artifacts or caches, and never consult an engine's own `metrics`, so they can cross-check the figures an engine reports.
 
-### 審查後修正的四個缺口（`610e612`）
+- **periods**: what are the closing equity, P&L and returns of an equity curve on UTC day and month boundaries? Periods without data are omitted rather than filled with zero, so period P&L always sums to the total P&L.
+- **performance**: from raw outputs alone, what were this run's return, volatility, drawdown and win rate? Used to check the figures an engine reports about itself.
+- **breakeven**: given the current payoff ratio, what win rate breaks even, and how far is the realised win rate from that line? What are the traded notional (entry plus exit legs) and the turnover?
+- **sharpe**: how reliable is the annualised Sharpe of daily returns? A stationary bootstrap gives the confidence interval; PSR gives the probability that the true Sharpe is above 0; DSR corrects for the selection bias of picking the best of N trials.
+- **comparison**: is the difference between two strategies on the same data significant? Both series are aligned on one timeline and resampled with the same block indices (a paired bootstrap), keeping the covariance of their returns.
+- **plateau**: does the best parameter set sit on a broad plateau where nearby parameters also perform well, or is it an isolated spike in the grid? Neighbourhoods use Chebyshev distance on grid indices.
+- **benchmark**: how does the strategy compare with buy-and-hold? The Sharpe difference is left to comparison; this module answers how the strategy co-moves with the instrument (beta is the average net exposure, not CAPM systematic risk).
+
+Also included: `arch>=8.0.0` (stationary bootstrap and the Politis–White optimal block length), `scripts/demo_statistics.py`, `scripts/demo_plateau.py`, `scripts/validate_run.py` and the committed `demo_output/`.
+
+### Four gaps fixed after review (`610e612`)
 
 - **`scripts/validate_run.py`**
-  - V3 原本斷言 `max_drawdown <= 0`，但 catalog 定義它是非負的幅度，所以對目前引擎的每一份結果都判 FAIL、exit 1。現在改照 catalog 的定義只檢查 `>= 0`。
-  - 成本原本用 `2 × total_volume`，但 `total_volume` 已含進出場兩腿，出場那一腿被重複計算：KD 的成本占比印成 173%，正確是 86.3%。現在和 demo 一樣，從 breakeven 的 traded notional 推導。
-- **`align_returns`**：naive 和 tz-aware 的索引混用時，原本會靜默得到 overlap 0，下游只看到「觀測數不足」，看不出真正原因是時區不一致。現在明確 raise，訊息指出是時區不一致、不是期間不重疊。五個呼叫端都經過這裡，包括 `compare_to_benchmark`。
-- **breakeven 的未平倉 trade**：原本會用最後的標記價補上一條沒發生的出場腿，高估成交名目與周轉率。測試案例中 breakeven 算出 3,990，引擎的 `total_volume` 是 3,010。行為選擇見下段。
-- **demo 的 fee 說明**：原本無條件寫「trade 的 `fee = 0`」，這只對舊引擎成立；目前引擎的 trade 會記錄手續費。現在依實際值決定：fee 總和為 0 時保留原句，否則寫出實際的手續費總額，並說明 slippage 已併入成交價。
+  - V3 asserted `max_drawdown <= 0`, but the catalog defines it as a nonnegative magnitude, so every result from the current engine failed with exit 1. It now follows the catalog definition and only checks `>= 0`.
+  - Cost was `2 × total_volume`, but `total_volume` already counts both legs, so the exit leg was counted twice: KD's cost share printed as 173% instead of 86.3%. Cost is now derived from breakeven's traded notional, as in the demo.
+- **`align_returns`**: mixing timezone-naive and timezone-aware indexes used to give overlap 0 silently. Downstream only saw "insufficient observations", with no sign that the cause was a timezone mismatch. It now raises explicitly, and the message says the cause is a timezone mismatch, not non-overlapping periods. All five callers go through it, including `compare_to_benchmark`.
+- **breakeven and open trades**: an open trade used to get a phantom exit leg at the last mark price, overstating traded notional and turnover. In the test case breakeven computed 3,990 while the engine's `total_volume` was 3,010. The chosen behaviour is described below.
+- **demo fee note**: the demo always said "Trade records carry `fee = 0`", which was only true of the old engine; the current engine records fees in its trades. The sentence now depends on the actual value: with a fee total of 0 it keeps the original wording, otherwise it states the actual fee total and explains that slippage is folded into fill prices.
 
-### breakeven 對未平倉 trade 的行為：納入，但只算進場腿
+### breakeven and open trades: kept, with the entry leg only
 
-`status == "open"` 的 trade 仍然計入，但成交名目只算進場那一腿。理由已寫在模組 docstring：
+A trade with `status == "open"` is still counted, but its traded notional is the entry leg only. The reasons are in the module docstring:
 
-- 進場確實成交、也付了成本。整筆排除會低估周轉率和成本；引擎的 `total_volume` 也只計已成交的單。
-- 它的 `exit_price` 是最後的標記價，不是成交價，所以不能算出場腿。
-- 它的 `net_pnl` 是按市價計算的，已經反映在權益曲線裡，所以仍算勝或敗。這樣才能維持「交易淨損益總和 = 整段損益」，以及「edge 為正若且唯若總損益為正」這條恆等式。
+- The entry was executed and paid its costs. Dropping the trade would understate turnover and cost; the engine's `total_volume` likewise counts only executed orders.
+- Its `exit_price` is the last mark price, not a fill, so it cannot count as an exit leg.
+- Its `net_pnl` is marked to market and already in the equity curve, so it still counts as a win or loss. This keeps "the trades' total net P&L equals the run's P&L" and the identity "the edge is positive exactly when total P&L is positive".
 
-**和引擎勝率的差異是刻意的，不是 bug：** 引擎的 `total_trades` 和 `win_rate` 只算已平倉的交易，所以期末有未平倉時，breakeven 的交易筆數與勝率會和引擎指標不同。docstring 已寫明這點。
+**The difference from the engine's win rate is intentional, not a bug:** the engine's `total_trades` and `win_rate` count closed trades only. So when a trade is still open at the end, breakeven's trade count and win rate differ from the engine's metrics. The docstring states this.
 
-另外，沒有 `status` 的舊格式紀錄視為已平倉，其他 status 值一律 raise。
+Records without a `status` (the old format) count as closed; any other status value raises.
 
-### 同步到 Python 3.14 / pandas 3
+### Synced to Python 3.14 / pandas 3
 
-本分支已 merge upstream `main`（3fa0852），在 Python 3.14.2、pandas 3.0.6、numpy 2.5.4、vectorbt 1.2.0、arch 8.0.0 下驗證。upstream 移除了 `request_execution_confirmation` 與原生 MCP elicitation，改成 `submit_execution_decision`，所以本分支原本修改確認表單的 commit（be952d9）在 merge 時被 upstream 版本取代，PR 差異中已不含該變更。
+This branch has merged upstream `main` (3fa0852) and is verified under Python 3.14.2, pandas 3.0.6, numpy 2.5.4, vectorbt 1.2.0 and arch 8.0.0. Upstream removed `request_execution_confirmation` and native MCP elicitation in favour of `submit_execution_decision`. So this branch's earlier commit changing the confirmation form (be952d9) was superseded by the upstream version in the merge and is no longer in the PR diff.
 
-merge commit 除了解衝突，還包含為了讓合併結果通過檢查而做的修改：
+Besides resolving conflicts, the merge commit contains changes needed for the merged tree to pass:
 
-- `periods.to_utc_index` 一律回傳 ns 索引。這是行為變更：pandas 3 會保留輸入的時間解析度。
-- benchmark 的 beta／alpha 測試改為對照 `quantstats.stats.greeks`，因為 upstream 移除了 empyrical。
-- `tests/integration/mcp_harness.py` 還原成 upstream 版本。
+- `periods.to_utc_index` always returns a nanosecond index. This is a behaviour change: pandas 3 keeps the input's time resolution.
+- The benchmark beta/alpha test now checks against `quantstats.stats.greeks`, because upstream removed empyrical.
+- `tests/integration/mcp_harness.py` is restored to the upstream version.
 
-各項細節寫在 merge commit 的訊息裡。
+The details are in the merge commit message.
 
-## 已驗證的數字
+## Verified figures
 
-以下五項都在 pandas 3.0.6 + numpy 2.5.4 下重新計算到全精度，和 pandas 2 時提交的 `demo_output/` 比對。`610e612` 的四項修正之後又重跑一次，結果完全相同。
+All five figures were recomputed to full precision under pandas 3.0.6 + numpy 2.5.4 and compared with the `demo_output/` committed under pandas 2. They were recomputed again after the four fixes in `610e612`, with identical results.
 
-KD(14,3,3) 的數字分兩條路驗證：
+The KD(14,3,3) figures were verified two ways:
 
-- 用原本提交時的同一個快取 pickle（`cd03bf19459b48af.pkl`）重算統計。
-- 在 pandas 3 下用 `BacktestService` 重新回測。
+- Recomputing the statistics from the same cached pickle used for the committed output (`cd03bf19459b48af.pkl`).
+- Re-running the backtest under pandas 3 with `BacktestService`.
 
-兩條路的全精度結果完全相同；三張重新產生的 markdown 表格（`kd_inference.md`、`plateau_table.md`、`plateau_gridindex_table.md`）和已提交版本逐位元組相同。重新回測的 412 筆交易都已平倉，所以未平倉 trade 的修正不影響這些數字。
+Both give identical results to full precision, and the three regenerated markdown tables (`kd_inference.md`, `plateau_table.md`, `plateau_gridindex_table.md`) are byte-identical to the committed ones. All 412 trades of the re-run backtest are closed, so the open-trade fix does not affect these figures.
 
-| 我們宣稱 | 驗證方式 | pandas 3 結果 |
+| We claim | How it was verified | pandas 3 result |
 | --- | --- | --- |
-| KD(14,3,3)（BTC/USDT 1h，2024 全年）日報酬年化 Sharpe 為 -7.57 | `period_returns(..., "daily")` 再 `sharpe_ratio(periods_per_year=365)`，快取與重新回測各算一次 | -7.565103143673017（兩條路相同） |
-| 估計成本 / abs(淨損益) 為 86.3% | traded notional × (fee 0.0006 + slippage 0.0005) ÷ abs(equity[-1] − equity[0]) | 0.863481526386825 |
-| traded notional（進場加出場）為 5,014,735.72 | `summarize_breakeven(trades).traded_notional`，來源是交易紀錄，不是引擎的 `total_volume` | 5014735.715506879 |
-| DSR 的 hurdle_annualised 在年化 Sharpe -6.00/-6.67/-7.57、ppy=365、n_trials=3 時為 0.6718 | `deflated_sharpe_ratio(..., annualised_trial_sharpes=[-6.00, -6.67, -7.57], periods_per_year=365, n_trials=3).hurdle_annualised`（hurdle 只取決於試驗 Sharpe 的離散程度，與報酬無關） | 0.6718418141111412 |
-| 平原 demo：真平原 metric_gap 0.000、plateau_best_score 1.056；假尖峰 metric_gap 1.934、plateau_best_score 0.642 | 用兩個 demo 腳本各自的合成 5×5 網格（seed 0）呼叫 `plateau_summary` | 真平原 0.0 / 1.0557559467813422；假尖峰 1.9339414629589853 / 0.6423599963505668（兩個腳本相同） |
+| KD(14,3,3) (BTC/USDT 1h, full year 2024) annualised Sharpe of daily returns is -7.57 | `period_returns(..., "daily")` then `sharpe_ratio(periods_per_year=365)`, once from the cache and once from the re-run | -7.565103143673017 (same both ways) |
+| Estimated cost / abs(net P&L) is 86.3% | traded notional × (fee 0.0006 + slippage 0.0005) ÷ abs(equity[-1] − equity[0]) | 0.863481526386825 |
+| Traded notional (entry plus exit) is 5,014,735.72 | `summarize_breakeven(trades).traded_notional`, from the trade records, not the engine's `total_volume` | 5014735.715506879 |
+| DSR hurdle_annualised is 0.6718 for annualised Sharpes -6.00/-6.67/-7.57, ppy=365, n_trials=3 | `deflated_sharpe_ratio(..., annualised_trial_sharpes=[-6.00, -6.67, -7.57], periods_per_year=365, n_trials=3).hurdle_annualised` (the hurdle depends only on the dispersion of the trial Sharpes, not on the returns) | 0.6718418141111412 |
+| Plateau demo: true plateau metric_gap 0.000, plateau_best_score 1.056; false spike metric_gap 1.934, plateau_best_score 0.642 | `plateau_summary` on each demo script's synthetic 5×5 grid (seed 0) | true plateau 0.0 / 1.0557559467813422; false spike 1.9339414629589853 / 0.6423599963505668 (same in both scripts) |
 
-重新回測得到的三組 KD 年化 Sharpe 分別是：
+The re-run backtest gives these annualised Sharpes for the three KD variants:
 
-- KD(21,5,5)：-6.004071680348325
-- KD(9,3,3)：-6.6715302187876615
-- KD(14,3,3)：-7.565103143673017
+- KD(21,5,5): -6.004071680348325
+- KD(9,3,3): -6.6715302187876615
+- KD(14,3,3): -7.565103143673017
 
-這正是 DSR 那一行用的三個試驗 Sharpe。
+These are exactly the three trial Sharpes used in the DSR row.
 
-`scripts/validate_run.py` 修正後對目前引擎的 KD 結果 24 項全部 PASS，算出的成本占比為 86%，和上表一致。
+After the fix, `scripts/validate_run.py` passes all 24 checks on the current engine's KD result, and its cost share of 86% agrees with the table.
 
-檢查（以 `610e612` 為準）：
+Checks (as of `610e612`):
 
-- `scripts/check-fast.sh` 通過。
-- `scripts/check-full.sh` 通過：4243 passed，12 deselected 為 `live_llm`，約 50 分鐘。
-- `pytest tests/domain/statistics/` 319 passed。
+- `scripts/check-fast.sh` passes.
+- `scripts/check-full.sh` passes: 4243 passed, 12 deselected (`live_llm`), about 50 minutes.
+- `pytest tests/domain/statistics/`: 319 passed.
 
-merge 時另外用 `-W error::FutureWarning -W error::DeprecationWarning` 跑過統計測試，全部通過。
+During the merge, the statistics tests also passed with `-W error::FutureWarning -W error::DeprecationWarning`.
 
-## plateau 契約已在真實資料上驗證
+## Plateau contract verified on real data
 
-`1b51608`（fix: keep failed slices on the plateau grid axes）讓 plateau 的網格軸取自所有被搜尋的參數列，包括失敗的。這樣某個參數值的試驗全部失敗時，它不會從軸上消失。這個行為原本只在合成資料上測過；這次在真實系統上走完一次完整流程。
+`1b51608` (fix: keep failed slices on the plateau grid axes) takes the plateau grid axes from every searched parameter row, failed ones included. So when every trial at some parameter value fails, that value does not disappear from its axis. This behaviour had only been tested on synthetic data; this time it was run end to end on the real system.
 
-**做了什麼：**
+**What was run:**
 
-- 真實的 KD 只做多參數搜尋：BTC/USDT 1h，2024 上半年訓練、下半年測試，overbought 固定為 100，所以不會做空。
-- 格點是 k_period ∈ {9, 14, 21, 28, 35} × oversold ∈ {20, 10, 0}，共 15 組。oversold=0 的 5 組是刻意製造的失敗切片：%K 不會低於 0，所以零交易、Sharpe 未定義。
-- 走完整的 MCP 流程：`prepare_optimization`，使用者讀過 HTML 確認單並在對話中明確同意後送出 `submit_execution_decision(decision="approve")`，再用 `get_job_status` 與 `get_run_metrics(scope="trial/{i}/train")` 讀回 15 個 trial scope。
-- 計畫／run ID 為 `f245f73b6ebb4c4b9c06b2ee08457339`。
+- A real long-only KD parameter search: BTC/USDT 1h, trained on 2024 H1 and tested on 2024 H2, with overbought fixed at 100 so the strategy never goes short.
+- The grid is k_period ∈ {9, 14, 21, 28, 35} × oversold ∈ {20, 10, 0}, 15 combinations. The 5 with oversold=0 are a deliberate failure slice: %K never goes below 0, so they make no trades and their Sharpe is undefined.
+- The full MCP flow: `prepare_optimization`; then, after the user read the HTML confirmation and explicitly approved in the conversation, `submit_execution_decision(decision="approve")`; then `get_job_status` and `get_run_metrics(scope="trial/{i}/train")` to read back all 15 trial scopes.
+- Plan/run ID: `f245f73b6ebb4c4b9c06b2ee08457339`.
 
-**結果：**
+**Results:**
 
-- 失敗的 5 組在 `available_scopes` 裡都有完整紀錄：`success: true`，`trial_index` 和 `parameters` 都在。
-- 33 個指標欄位和成功的 trial 完全相同（逐一比對），算不出來的 8 個是 `None`：`sharpe_ratio`、`sortino_ratio`、`calmar_ratio`、`win_rate`、`profit_factor`、`trade_expectancy`、`avg_holding_bars`、`total_slippage`（成功的 trial 這個也是 None）。原因碼寫在 `metadata.unavailable`。
-- 把 15 個 scope 的 `parameters` 和 `sharpe_ratio` 餵進 `trials_from_metrics(direction="maximize")`：`dropped_count=5`，並發出 `DroppedTrialsWarning`。軸上仍保留 `oversold=(0, 10, 20)`，那 5 格變成缺失格點，而不是從軸上消失。
-- `plateau_summary` 也照預期反映缺失格點：最佳組合 (9, 10) 位於角落，本來有 5 個鄰居，其中 2 個是缺失格點，所以 `best_neighborhood_size=3`。
+- The 5 failed trials each have a complete record in `available_scopes`: `success: true`, with `trial_index` and `parameters` present.
+- Their 33 metric fields are exactly the same as a successful trial's (compared one by one), and the 8 that cannot be computed are `None`: `sharpe_ratio`, `sortino_ratio`, `calmar_ratio`, `win_rate`, `profit_factor`, `trade_expectancy`, `avg_holding_bars` and `total_slippage` (which is None for successful trials too). The reason codes are in `metadata.unavailable`.
+- Feeding the 15 scopes' `parameters` and `sharpe_ratio` into `trials_from_metrics(direction="maximize")` gives `dropped_count=5` and a `DroppedTrialsWarning`. The axis still holds `oversold=(0, 10, 20)`: the 5 failed cells become missing grid points instead of disappearing from the axis.
+- `plateau_summary` reflects the missing points as expected: the best combination (9, 10) sits in a corner with 5 neighbours, 2 of them missing, so `best_neighborhood_size=3`.
 
-所以 `1b51608` 修的行為在真實系統上成立，不只是合成資料上的推論。
+So the behaviour `1b51608` fixed holds on the real system, not only as an inference from synthetic data.
 
-## 順帶發現、但屬於別人範圍的事
+## Found along the way, outside this PR's scope
 
-### preflight 只取每個範圍的第一個值試跑
+### preflight trials only the first value of each range
 
-`src/tradingdev/adapters/execution/preflight_worker.py:232-293`：
+`src/tradingdev/adapters/execution/preflight_worker.py:232-293`:
 
-- 第 232-234 行只取每個參數範圍的第一個值，在一小段訓練樣本上試跑這一組。
-- 第 284-290 行：如果這一組算不出目標指標，就 raise `unrankable_sample_objective`，整個計畫被擋掉，連 plan 都不會建立。
+- Lines 232-234 take only the first value of each parameter range and trial that one combination on a small training sample.
+- Lines 284-290: if that combination cannot compute the objective, it raises `unrankable_sample_objective` and blocks the whole plan; no plan is even created.
 
-實際影響：用升冪寫範圍是最自然的寫法（例如 oversold 從 0 開始），而邊界值常常就是不會產生交易的那個，所以最自然的寫法恰好會被擋。這次的搜尋就是這樣：原本照 `oversold=[10, 20, 0]` 送出時被擋下，改成 `[20, 10, 0]` 才通過，格點完全相同。
+In practice, writing ranges in ascending order is the most natural way (for example, oversold starting at 0), and the boundary value is often the one that makes no trades, so the most natural way is exactly the one that gets blocked. That is what happened in this search: submitting `oversold=[10, 20, 0]` was blocked, and only `[20, 10, 0]` went through, with an identical grid.
 
-建議：在錯誤訊息裡提示「試跑只取每個範圍的第一個值」，讓使用者知道調整順序就能通過。
+Suggestion: have the error message say that the trial run uses only the first value of each range, so users know reordering lets it through.
 
-### 判斷零交易不能看 Sharpe 的 unavailable 原因碼
+### Zero trades cannot be detected from Sharpe's unavailable reason code
 
-零交易的 trial 在 `metadata.unavailable` 裡，Sharpe、Sortino、Calmar 的原因碼都是 `zero_denominator`，因為權益曲線平坦。只有勝率、獲利因子、期望值和平均持有 K 棒數才是 `no_trades`。證據在 `src/tradingdev/domain/backtest/metrics.py`：
+For a zero-trade trial, `metadata.unavailable` gives `zero_denominator` for Sharpe, Sortino and Calmar, because the equity curve is flat. Only win rate, profit factor, expectancy and average holding bars carry `no_trades`. The evidence is in `src/tradingdev/domain/backtest/metrics.py`:
 
-- 第 201-208 行：沒有已平倉交易時，只把 `win_rate`、`profit_factor`、`trade_expectancy`、`avg_holding_bars` 標成 `no_trades`。
-- 第 236-240 行：非有限值（包括平坦權益的 Sharpe）一律標成 `zero_denominator`。
-- 第 355-356 行（Calmar）與第 382-386 行（Sortino）同樣標成 `zero_denominator`。
+- Lines 201-208: without closed trades, only `win_rate`, `profit_factor`, `trade_expectancy` and `avg_holding_bars` are marked `no_trades`.
+- Lines 236-240: non-finite values (including the Sharpe of a flat equity curve) are all marked `zero_denominator`.
+- Lines 355-356 (Calmar) and 382-386 (Sortino) likewise mark `zero_denominator`.
 
-所以判斷零交易要看 `total_trades == 0`。權益平坦但有交易的情況，Sharpe 的原因碼也會一樣，光看原因碼分不出來。任何消費 scope 的人都會踩到這個，值得寫進文件。
+So zero trades must be detected with `total_trades == 0`. A flat equity curve with trades gives the same Sharpe reason code, so the code alone cannot tell them apart. Anyone consuming scopes will hit this, and it is worth documenting.
 
-### 試驗回測逾時會讓整個 job 結束
+### A trial-run timeout ends the whole job
 
-`src/tradingdev/mcp/workers/optimization.py`：
+`src/tradingdev/mcp/workers/optimization.py`:
 
-- 第 334 行先設 `trial_result = None`。
-- 試驗回測（第一組 combo）逾時的話，第 352–365 行的 `except _TrialTimeoutError` 會把 job 標成 `estimation_timeout` 後直接 `return`；其他例外由第 366–370 行 `_fail()` 後 `return`。
-- 因此第 413 行的 `if trial_result is not None` 實際上走不到 `None` 分支。
+- Line 334 first sets `trial_result = None`.
+- If the trial run (the first combo) times out, the `except _TrialTimeoutError` at lines 352–365 marks the job `estimation_timeout` and hits `return`; other exceptions go through `_fail()` at lines 366–370 and then `return`.
+- So the `None` branch of `if trial_result is not None` at line 413 is unreachable.
 
-結果是整個 job 沒有任何結果，不會只少一組參數。值得處理的地方有兩個：
+The result is that the whole job produces nothing, rather than missing just one parameter set. Two things are worth addressing:
 
-- 一支策略只要第一組參數慢，整個最佳化就做不了。
-- 第 413 行的防禦式判斷容易讓人誤以為存在「少一列」的路徑。
+- A strategy whose first parameter set is slow cannot be optimised at all.
+- The defensive check at line 413 suggests a "one row missing" path that does not exist.
 
-### 單一 combo 拋例外會讓整個 job 失敗
+### One combo raising fails the whole job
 
-同一檔案：
+Same file:
 
-- 第 106–146 行的 `_evaluate_combo` 和它呼叫的 `_run_single_combo` 都沒有 try/except。
-- 只要 joblib 任何一個 worker 拋例外，`Parallel(...)` 就會整批重拋，被第 440–442 行的 `except Exception` 接住後呼叫 `_fail(job_id, "Optimization error at batch ...")`。
-- 已完成批次的結果全部丟棄，plateau 也拿不到「這一格失敗了」的資訊。
+- `_evaluate_combo` at lines 106–146, and the `_run_single_combo` it calls, have no try/except.
+- If any joblib worker raises, `Parallel(...)` re-raises for the whole batch; the `except Exception` at lines 440–442 catches it and calls `_fail(job_id, "Optimization error at batch ...")`.
+- All results from completed batches are discarded, and plateau never learns that this cell failed.
 
-零交易不屬於這種情況：它會回傳 metric 為 `None` 的 `ComboEvaluation`，由 `tests/mcp/test_optimization_failed_trials.py` 的 `test_zero_trade_combo_returns_an_undefined_objective` 與 `test_parallel_transport_also_returns_the_zero_trade_combo` 釘住（序列與 joblib 兩條路徑）。上面的真實搜尋也印證了這一點。
+Zero trades are not this case: they return a `ComboEvaluation` whose metric is `None`. This is pinned by `test_zero_trade_combo_returns_an_undefined_objective` and `test_parallel_transport_also_returns_the_zero_trade_combo` in `tests/mcp/test_optimization_failed_trials.py` (sequential and joblib paths). The real search above confirms it as well.
 
-### 確認表單的 approved 勾選框（upstream 已移除）
+### The confirmation form's approved checkbox (removed upstream)
 
-在 merge 前的程式碼（`src/tradingdev/mcp/tools/execution.py` 的 `UserApproval.approved: bool = Field(default=False)`，以及 `accepted = answer.action == "accept" and answer.data.approved`）下，Claude Code 的 elicitation 表單無法勾選這個 boolean。按 Enter 送出的是 `approved=False`，被判為拒絕，計畫就無法核准。
+Before the merge (`UserApproval.approved: bool = Field(default=False)` and `accepted = answer.action == "accept" and answer.data.approved` in `src/tradingdev/mcp/tools/execution.py`), Claude Code's elicitation form could not toggle this boolean. Pressing Enter submitted `approved=False`, which was treated as a refusal, so the plan could never be approved.
 
-upstream 3fa0852（ce8cfb8 `build!: migrate MCP integration to SDK 2`）已經移除 `request_execution_confirmation` 與原生 elicitation，改為 `submit_execution_decision(plan_id, decision)`：
+Upstream 3fa0852 (ce8cfb8 `build!: migrate MCP integration to SDK 2`) removed `request_execution_confirmation` and native elicitation in favour of `submit_execution_decision(plan_id, decision)`:
 
-- `ARCHITECTURE.md` 寫明原工具已移除。
-- `docs/strategy_contract.md` 寫明原工具已移除。
+- `ARCHITECTURE.md` states that the old tool is removed.
+- `docs/strategy_contract.md` states that the old tool is removed.
 
-這個問題在目前的 main 上已不存在。列在這裡只是說明本分支原本的 be952d9 為何不在 PR 差異中。
+The problem no longer exists on current main. It is listed here only to explain why this branch's earlier be952d9 is not in the PR diff.
 
-### Leaderboard 整合缺的兩樣東西
+### Two things missing for leaderboard integration
 
-詳見 `docs/statistics_leaderboard_integration.md`。
+See `docs/statistics_leaderboard_integration.md`.
 
-- 「Missing for Plateau Analysis」：每筆 entry 的參數座標；把只差在搜尋設定的 entry 分在同一組的方法（和排名用的 `comparability_error` 分開）；失敗的候選也要留成 entry，metric 記為缺值。
-- 「Missing for the Paired Bootstrap」：每個候選逐 bar 的 IC 序列（或預測值，搭配被排名訊號的 fingerprint）；這些序列共用的 bar 索引，讓 `align_returns` 能配對。
+- "Missing for Plateau Analysis": parameter coordinates per entry; a way to group entries that differ only in the searched settings (separate from the `comparability_error` check used for ranking); failed candidates kept as entries with the metric recorded as missing.
+- "Missing for the Paired Bootstrap": each candidate's per-bar IC series (or predictions, with a fingerprint of the ranked signal); a shared bar index for those series so `align_returns` can pair them.
 
-## 還沒做的事
+## Not done yet
 
-- **統計模組目前沒有任何對外出口：** 沒有 MCP 工具或 CLI 指令呼叫它們。要不要變成 `provider="statistics"` 的 catalog 指標還沒有決議。這是最需要團隊回應的一項。
-- **引擎或策略在執行中拋例外的路徑沒有驗證過。**
-- **`trials_from_metrics` 只擋得住「指標未定義」，擋不住「指標算得出來但樣本太少」。**
-  - 上面那次搜尋裡，最佳組合 (9, 10) 只有 2 筆交易。它的 Sharpe 算得出來，所以不會被丟掉，就這樣成了 `best_params`。但 2 筆交易的 Sharpe 沒有統計意義：它排第一只是因為交易少、虧得少。
-  - 可能的做法：加一個最小觀測數門檻，低於門檻當成失敗處理，但軸照樣保留，和 `min_neighborhood` 同一個設計模式。
-  - 這項留作後續，不在這個 PR 裡做。
-- **KD 那幾個數字沒有測試把關：** -7.57、86.3%、5,014,735.72 只存在於 `demo_output/`。資料與快取 pickle 不進 Git，所以 check-full 偵測不到它們的變化。會受 pandas 影響的切期邏輯由 periods 的手算測試涵蓋；DSR hurdle 與平原的數字則由單元測試以 rel 1e-6 固定。
-- **demo 的輸入依 mtime 挑選：** `latest_cache()` 選最新的 pickle，重跑時不一定讀到 `kd_inference.md` 所引用的那一個。
-- **`scripts/validate_run.py` 沒有自動化測試：** 它的修正只靠手動對兩份 pickle 實跑驗證。
+- **The statistics modules have no external entry point yet:** no MCP tool or CLI command calls them. Whether they should become catalog metrics with `provider="statistics"` is still undecided. This is the item that most needs a response from the team.
+- **The path where the engine or a strategy raises during execution has not been verified.**
+- **`trials_from_metrics` only rejects undefined metrics, not metrics that are computable from too small a sample.**
+  - In the search above, the best combination (9, 10) has only 2 trades. Its Sharpe is computable, so it is not dropped and becomes `best_params`. But a Sharpe from 2 trades has no statistical meaning: it ranks first only because fewer trades lose less.
+  - A possible approach: a minimum-observations threshold, treating trials below it as failed while keeping the axes, in the same design pattern as `min_neighborhood`.
+  - This is left for follow-up and is not part of this PR.
+- **The KD figures are not guarded by tests:** -7.57, 86.3% and 5,014,735.72 exist only in `demo_output/`. The data and the cached pickles are not in Git, so check-full cannot detect a change in them. The pandas-sensitive period logic is covered by hand-computed periods tests, and the DSR hurdle and plateau figures are pinned by unit tests at rel 1e-6.
+- **The demo picks its input by mtime:** `latest_cache()` selects the newest pickle, so a re-run does not necessarily read the one `kd_inference.md` cites.
+- **`scripts/validate_run.py` has no automated tests:** its fixes were verified only by running it by hand on two pickles.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
