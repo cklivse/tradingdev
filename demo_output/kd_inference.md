@@ -2,6 +2,8 @@
 
 Source: `workspace/data/processed/cache/cd03bf19459b48af.pkl` — strategy `kd_crossover` {'k_period': 14, 'd_period': 3, 'smooth_k': 3, 'overbought': 80.0, 'oversold': 20.0}, BTC/USDT 1h, 2024-01-01 to 2024-12-31, init cash 10,000.
 
+Source SHA-256: `b9493b6bf5f1f171fee472812a9c6f7aab7a58f5d93fc6644386211d5b6febd0`
+
 ## Sample size
 
 | Statistic | Value |
