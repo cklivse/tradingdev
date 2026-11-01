@@ -4,7 +4,9 @@
 
 This document describes how the statistics package
 (`src/tradingdev/domain/statistics/`) can consume what the ML leaderboard
-records, what fails along the way, and what is still undecided.
+records, what fails along the way, and what is still undecided. The
+statistics entry points and their failure conventions are in
+[statistics_public_api.md](statistics_public_api.md).
 
 This branch has merged upstream main at `a24594c` (2026-11-01). Every
 statement about the leaderboard was checked against that code in this tree,
