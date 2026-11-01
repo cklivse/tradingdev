@@ -2,7 +2,9 @@
 
 This is a handover contract for the owner of the ML signal leaderboard. It
 lists what the statistics modules in `src/tradingdev/domain/statistics/` need
-before they can analyse leaderboard candidates, and why.
+before they can analyse leaderboard candidates, and why. Their entry points
+and failure conventions are in
+[statistics_public_api.md](statistics_public_api.md).
 
 Every statement about the leaderboard comes from reading `upstream/main` at
 commit `3fa0852` (2026-10-23), which this branch has merged, so the file paths

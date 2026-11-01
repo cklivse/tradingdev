@@ -49,6 +49,7 @@ flowchart LR
 | `domain/presentation/`、`adapters/presentation/` | 固定文件內容與章節、白話欄位投影，以及共用文字／HTML 呈現 |
 | `domain/backtest/`、`domain/validation/`、`domain/optimization/` | 回測引擎、walk-forward、參數搜尋與績效計算整合 |
 | `domain/performance/` | 指標定義、適用條件、最佳化方向與具型別的績效產物模型 |
+| `domain/statistics/` | 只讀呼叫端資料的推論統計：期間報酬、Sharpe 區間與校正、配對比較、參數平原與買進持有基準；公開介面見 [statistics_public_api](docs/statistics_public_api.md) |
 | `domain/data/`、`domain/indicators/`、`domain/ml/` | 行情與特徵資料處理、技術指標、模型及訓練邏輯 |
 | `adapters/storage/`、`adapters/execution/` | SQLite、revision／manifest／績效檔案保存，以及程序啟動與監督 |
 | `adapters/cli/`、`adapters/dashboard/` | 終端機與視覺化入口 |

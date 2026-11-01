@@ -1,7 +1,10 @@
 """Validate a TradingDev run's metrics against its raw series.
 
 Usage:
-    uv run python validate_run.py [path/to/pipeline_result.pkl]
+    uv run python scripts/validate_run.py path/to/pipeline_result.pkl
+
+The path is required: picking "the latest" file would silently validate a
+different run than the one meant.
 
 Every reported metric is treated as a claim and recomputed from
 equity_curve / timestamps / trades.  Exit code 1 if any check FAILs.
@@ -9,9 +12,9 @@ equity_curve / timestamps / trades.  Exit code 1 if any check FAILs.
 
 from __future__ import annotations
 
-import glob
 import pickle
 import sys
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -60,6 +63,13 @@ def close(a: float, b: float, tol: float = TOL) -> bool:
 def main(path: str) -> int:
     with open(path, "rb") as f:
         pr = pickle.load(f)
+    print(f"file      : {path}")
+    return validate(pr)
+
+
+def validate(pr: Any) -> int:
+    """Check one pipeline result; the outcome of each check is in ``results``."""
+    results.clear()
     if pr.mode != "simple":
         print(f"mode={pr.mode}: this checker handles simple backtests only")
         return 2
@@ -72,7 +82,6 @@ def main(path: str) -> int:
     mode = getattr(bt, "mode", cfg.get("mode", "signal"))
     init_cash = getattr(bt, "init_cash", None) or cfg.get("init_cash")
 
-    print(f"file      : {path}")
     print(f"mode      : {mode}   bars: {len(eq)}   trades: {len(trades)}")
 
     # ---------- 1. structure ----------
@@ -286,14 +295,7 @@ def report() -> int:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        target = sys.argv[1]
-    else:
-        found = sorted(glob.glob("workspace/data/processed/cache/*.pkl")) + sorted(
-            glob.glob("workspace/runs/*/pipeline_result.pkl")
-        )
-        if not found:
-            print("找不到 pipeline_result.pkl，請指定路徑")
-            raise SystemExit(2)
-        target = found[-1]
-    raise SystemExit(main(target))
+    if len(sys.argv) != 2:
+        print("用法: uv run python scripts/validate_run.py path/to/pipeline_result.pkl")
+        raise SystemExit(2)
+    raise SystemExit(main(sys.argv[1]))

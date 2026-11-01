@@ -150,8 +150,15 @@ class TestTradeStatistics:
                 [100.0, 100.0], self._timestamps, [{"net_pnl": float("inf")}]
             )
 
-    def test_rejects_non_positive_periods_per_year(self) -> None:
-        with pytest.raises(ValueError, match="periods_per_year"):
+    @pytest.mark.parametrize(
+        "periods_per_year", [0.0, -1.0, float("nan"), float("inf")]
+    )
+    def test_rejects_invalid_periods_per_year(self, periods_per_year: float) -> None:
+        # NaN and infinity used to pass through and come out as the Sharpe.
+        with pytest.raises(ValueError, match="positive and finite"):
             summarize_performance(
-                [100.0, 100.0], self._timestamps, [], periods_per_year=0
+                [100.0, 100.0],
+                self._timestamps,
+                [],
+                periods_per_year=periods_per_year,
             )

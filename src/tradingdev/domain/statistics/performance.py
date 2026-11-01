@@ -111,11 +111,15 @@ def summarize_performance(
     Raises:
         ValueError: If the inputs are inconsistent (see
             :func:`~tradingdev.domain.statistics.periods.equity_series`),
-            ``periods_per_year`` is not positive, or a trade lacks a finite
-            ``net_pnl``.
+            ``periods_per_year`` is not positive and finite, or a trade lacks
+            a finite ``net_pnl``.
     """
-    if periods_per_year <= 0:
-        raise ValueError("periods_per_year must be positive")
+    if not (
+        isinstance(periods_per_year, numbers.Real)
+        and math.isfinite(periods_per_year)
+        and periods_per_year > 0
+    ):
+        raise ValueError("periods_per_year must be positive and finite")
     equity = equity_series(equity_curve, timestamps)
     daily = period_pnl(equity_curve, timestamps, "daily")
     monthly = period_pnl(equity_curve, timestamps, "monthly")
