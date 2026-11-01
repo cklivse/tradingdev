@@ -172,6 +172,14 @@ below 20 as `"insufficient_observations"`; `difference_interval` and
 `interval_table` return `None`; and `align_returns` sets
 `sufficient=False`.
 
+`BenchmarkComparison.active_return_annualised` (formerly
+`excess_return_annualised`) is the annualised mean of the per-period return
+differences, the numerator of `information_ratio`. It is not the "excess
+return" the product reports show beside their benchmark: in this package's
+benchmark comparisons that name is reserved for the total-return difference,
+strategy minus benchmark. Label the two separately in an adapter; their
+figures are not interchangeable.
+
 ### Other Conventions
 
 - `probabilistic_sharpe_ratio(returns, benchmark_sr=...)` takes a per-period
