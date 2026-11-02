@@ -7,8 +7,9 @@ objects, or, for the period series and buy-and-hold returns, a
 reads runs, artifacts, caches or an engine's
 ``metrics``, and nothing writes files. No application service or MCP tool
 calls this package yet. ``docs/statistics_leaderboard_integration.md``
-describes how the plateau and paired-comparison modules can consume the ML
-leaderboard's records, and what still blocks the paired comparison.
+describes how ranking of signals and backtests, the ML leaderboard and this
+package divide the work: this package analyses candidates after ranking and
+never decides a rank. It also lists what still blocks the paired comparison.
 The names in ``__all__`` are the public entry points;
 ``docs/statistics_public_api.md`` is the reference for callers outside this
 package.
@@ -55,9 +56,11 @@ Read these first; each one limits what a result may claim.
   initial cash; standard deviations use ``ddof=1``, where the engine's
   period P&L uses ``ddof=0``; Sharpe ratios assume a zero risk-free rate.
   A difference from the engine's ``metrics`` is not by itself an error.
-* **Statistical is not economic significance**, and only out-of-sample
-  returns of strategies run over the same period, instrument and costs
-  are comparable. No statistic here repairs a comparison that fails that.
+* **Statistical is not economic significance**, and a statistical
+  comparison needs out-of-sample returns of strategies run over the same
+  period, instrument and costs; on in-sample returns of tuned parameters it
+  measures fit. No statistic here repairs a comparison that fails that.
+  Ranking has no such requirement.
 
 Modules, by the question each answers
 -------------------------------------

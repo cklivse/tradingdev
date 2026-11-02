@@ -295,6 +295,7 @@ them, check that the scope's `metadata.settings.periods_per_year` equals
 `sharpe_ratio(selected_returns, periods_per_year=PPY)`. If either differs,
 the hurdle is silently computed on another scale.
 
-`docs/statistics_leaderboard_integration.md` covers the separate question of
-what the ML leaderboard must record before these modules can analyse its
-candidates.
+`docs/statistics_leaderboard_integration.md` covers how ranking of signals
+and backtests, the ML leaderboard and these modules divide the work: these
+modules analyse candidates after ranking, never decide a rank, and need the
+records listed there before the paired comparison can run.
