@@ -1,6 +1,6 @@
 # 跨策略排名的代表結果沒有帶上搜尋規模，`deflated_sharpe_ratio` 因此無法修正選擇偏誤
 
-> 已開為 [#189](https://github.com/Kuan-Lun/tradingdev/issues/189)（2026-11-07）。貼上的正文省略了下方「依據 upstream main」那一行，其餘與本檔相同。
+**已開為** [#189](https://github.com/Kuan-Lun/tradingdev/issues/189)（2026-11-07）。貼上的正文省略了下方「依據 upstream main」那一行，其餘與本檔相同。
 
 > 依據 upstream main `741fd848039aeaa3c2cb6f2c1663359964876d1c`。`deflated_sharpe_ratio` 在 statistics 套件拆分的第 4 包（`tradingdev.domain.statistics.sharpe`），尚未合併。
 

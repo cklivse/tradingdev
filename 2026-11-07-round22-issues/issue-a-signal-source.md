@@ -1,6 +1,6 @@
 # leaderboard 紀錄分不出訊號是後端模型產生的還是呼叫端提供的，`LeaderboardEntry.training_dataset_id` 可能在描述另一條序列
 
-> 已開為 [#190](https://github.com/Kuan-Lun/tradingdev/issues/190)（2026-11-07）。貼上的正文省略了下方「依據 upstream main」那一行，其餘與本檔相同。
+**已開為** [#190](https://github.com/Kuan-Lun/tradingdev/issues/190)（2026-11-07）。貼上的正文省略了下方「依據 upstream main」那一行，其餘與本檔相同。
 
 > 依據 upstream main `741fd848039aeaa3c2cb6f2c1663359964876d1c`。
 
