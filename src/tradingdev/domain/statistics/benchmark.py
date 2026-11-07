@@ -1,16 +1,24 @@
 """Buy-and-hold benchmark returns and a strategy's regression on them.
 
-This is a research comparison, not the product's benchmark.
-:mod:`tradingdev.domain.benchmark` defines the benchmark that runs store
-and reports show: a fixed instrument per asset class (BTC/USDT for any
-Binance USDT pair, the S&P 500 for US equities), bought once with the
-run's fee and slippage and held to the end. This module takes whatever prices
-the caller passes, charges no costs, and is meant for holding the very
-instrument the strategy trades. The figures of the two benchmarks differ
-because of the instrument and the definition of the return difference, not
-because of costs: the product's cost falls on the entry only, after which
-its per-period returns equal the price returns. The cost rules therefore
-stay as they are.
+This is a research comparison, not the product's benchmark. The two follow
+different rules:
+
+* The product benchmark, which runs store and reports show, is defined by
+  :mod:`tradingdev.domain.benchmark`. Its ``BENCHMARKS`` table fixes one
+  instrument per asset class; that table, not this docstring, decides which
+  asset classes and instruments exist (at the time of writing it covers
+  crypto, US equities and Taiwan equities; crypto, for example, uses
+  BTC/USDT). The instrument is bought once with the run's fee and slippage
+  and held to the end, and the reports show the total-return difference,
+  strategy minus benchmark.
+* This module takes whatever prices the caller passes, usually the very
+  instrument the strategy trades, charges no costs, and reports the
+  annualised mean of the per-period differences as the active return.
+
+The figures of the two benchmarks differ because of the instrument and the
+definition of the return difference, not because of costs: the product's
+cost falls on the entry only, after which its per-period returns equal the
+price returns. The cost rules therefore stay as they are.
 
 The convention this package adopts in benchmark comparisons: "excess
 return" is reserved for the total-return difference, strategy minus
