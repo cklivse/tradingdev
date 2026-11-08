@@ -1,10 +1,10 @@
 Title: feat(statistics): add parameter plateau analysis
 
-Part 3 of the statistics split; #<P1> explains the split.
+Part 3 of the statistics split; #206 explains the split.
 
 - Parameter plateau analysis over grid-search trials (is the best parameter set on a broad plateau or an isolated spike), with an MCP test showing that failed trials stay recorded.
 
-Depends on #<P1>. Until #<P1> merges, this diff also shows #<P1>'s commit.
+Depends on #206. Until #206 merges, this diff also shows #206's commit.
 
 ## Commits
 

@@ -12,7 +12,7 @@ At the 2026-10-27 meeting the review feedback on #38 was that the PR was too lar
 | 4 | `stats/4-sharpe` | `sharpe`, `performance`; adds `arch` | `_validation`, `_scaling`, `periods` (1) |
 | 5 | `stats/5-comparison` | `comparison`, `benchmark` | `sharpe` (4), `periods` (1) |
 
-Merge order: this PR first, then 2, 3 and 4 in any order, then 5 after 4. Until a prerequisite merges, a PR's diff against `main` also shows the prerequisite's commits. The split was agreed on #38 (<AGREEMENT_URL>).
+Merge order: this PR first, then 2, 3 and 4 in any order, then 5 after 4. Until a prerequisite merges, a PR's diff against `main` also shows the prerequisite's commits.
 
 Code and tests are copied file by file from `feat/stats-py314` without rewriting. After the split, two changes were made only on the split branches: PR 3 picks up an upstream rename, and PR 5 rewords one docstring. Both PRs explain them. What #38 has beyond this series is documentation (the full package guide in `__init__.py`, the methods documents, and the ARCHITECTURE/README sections). A KD fixture test PR follows once 2, 3 and 5 are in.
 

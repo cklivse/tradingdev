@@ -1,11 +1,11 @@
 Title: feat(statistics): add Sharpe inference and performance summary
 
-Part 4 of the statistics split; #<P1> explains the split. Code and tests are copied unchanged from `feat/stats-py314`.
+Part 4 of the statistics split; #206 explains the split. Code and tests are copied unchanged from `feat/stats-py314`.
 
 - Sharpe ratio with a bootstrap interval, probabilistic and deflated Sharpe, and a performance summary computed from raw run outputs; adds the `arch` dependency (`pyproject.toml`, `uv.lock`).
 - The literature behind each step is in `docs/statistics_bootstrap_methods.md` on #38.
 
-Depends on #<P1>. Until #<P1> merges, this diff also shows #<P1>'s commit.
+Depends on #206. Until #206 merges, this diff also shows #206's commit.
 
 ## Verification
 

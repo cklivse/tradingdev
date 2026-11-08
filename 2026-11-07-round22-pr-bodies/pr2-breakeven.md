@@ -1,10 +1,10 @@
 Title: feat(statistics): add break-even and cost analysis
 
-Part 2 of the statistics split; #<P1> explains the split. Code and tests are copied unchanged from `feat/stats-py314`.
+Part 2 of the statistics split; #206 explains the split. Code and tests are copied unchanged from `feat/stats-py314`.
 
 - Break-even win rate and turnover cost, computed only from trade records.
 
-Depends on #<P1>. Until #<P1> merges, this diff also shows #<P1>'s commit.
+Depends on #206. Until #206 merges, this diff also shows #206's commit.
 
 ## Verification
 

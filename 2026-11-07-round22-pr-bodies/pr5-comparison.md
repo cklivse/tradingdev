@@ -1,10 +1,10 @@
 Title: feat(statistics): add paired comparison and benchmark comparison
 
-Part 5 of the statistics split; #<P1> explains the split.
+Part 5 of the statistics split; #206 explains the split.
 
 - Paired bootstrap comparison of strategies on the same data, and buy-and-hold benchmark returns with a strategy's regression on them.
 
-Depends on #<P4> (and on #<P1> through it). Until those merge, this diff also shows their commits.
+Depends on #209 (and on #206 through it). Until those merge, this diff also shows their commits.
 
 ## Commits
 
