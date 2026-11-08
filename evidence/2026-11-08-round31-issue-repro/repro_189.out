@@ -1,0 +1,213 @@
+[search] narrow: combos searched=2, selected trial=0, train Sharpe of all trials (None = undefined)=[-12.7992, -13.4449]
+[search] wide: combos searched=24, selected trial=17, train Sharpe of all trials (None = undefined)=[-9.7459, -5.3123, -4.6645, -11.7461, -11.0779, -5.0472, -12.7992, -10.9542, -8.5992, -12.0222, -3.9176, -3.1313, -13.4449, -7.4964, -2.9162, -10.5157, -10.091, 0.0804, -14.5687, -11.3814, -4.0506, -15.7177, -12.8768, -4.5]
+[bundle] narrow: default_scope=test, trial scopes=2, selected_train_scope=trial/0/train, stored train Sharpe std (ddof=1)=0.4566
+[bundle] wide: default_scope=test, trial scopes=24, selected_train_scope=trial/17/train, stored train Sharpe std (ddof=1)=4.3291
+[ranking result, full JSON]
+{
+  "success": true,
+  "metric": "run.sharpe_ratio",
+  "direction": "maximize",
+  "unit": "ratio",
+  "ranked_total": 2,
+  "ranked": [
+    {
+      "rank": 1,
+      "tied": 1,
+      "value": -8.222043008709035,
+      "run_id": "wide",
+      "scope": "test",
+      "strategy_id": "kd_crossover",
+      "revision_id": "rev-1",
+      "parameters": {
+        "d_period": 7,
+        "k_period": 21
+      },
+      "metadata": {
+        "calculation_fallbacks": {},
+        "execution_context": {
+          "end_date": "2024-02-29T23:59:59.999999",
+          "fees": 0.0006,
+          "init_cash": 10000.0,
+          "mode": "signal",
+          "monthly_max_loss": 1500.0,
+          "periods_per_year": 365.0,
+          "position_size": null,
+          "random_seed": 42,
+          "re_entry_after_sl": true,
+          "required_return": 0.0,
+          "risk_free_rate": 0.0,
+          "signal_as_position": false,
+          "slippage": 0.0005,
+          "start_date": "2024-01-31T00:00:00",
+          "stop_loss": null,
+          "symbol": "BTC/USDT",
+          "take_profit": null,
+          "timeframe": "1h"
+        },
+        "mode": "signal",
+        "observations": {
+          "account_history_availability": "available",
+          "account_history_mark": "bar_close",
+          "accounting": "vectorbt_generic",
+          "bar_count": 720,
+          "end_date": "2024-02-29T23:00:00+00:00",
+          "execution_equity_mark": "requested_price_before_slippage",
+          "execution_records_availability": "available",
+          "execution_timestamp_semantics": "bar_timestamp_not_exact_intrabar_fill",
+          "start_date": "2024-01-31T00:00:00+00:00",
+          "trade_count": 38
+        },
+        "providers": {
+          "quantstats": "0.0.86",
+          "vectorbt": "1.2.0"
+        },
+        "schema_version": 1,
+        "settings": {
+          "calendar_timezone": "UTC",
+          "calmar_drawdown_sampling": "observed_daily",
+          "cost_model": "commission_and_slippage_adjusted_fill_prices",
+          "drawdown_sampling": "bar",
+          "excess_return_adjustment": "configured_rate_before_quantstats",
+          "frequency": "1h",
+          "initial_cash": 10000.0,
+          "missing_dates": "not_filled",
+          "period_pnl_std_ddof": 0,
+          "periods_per_year": 365.0,
+          "required_return": 0.0,
+          "required_return_per_period": 0.0,
+          "return_sampling": "observed_daily",
+          "return_std_ddof": 1,
+          "returns_basis": "simple",
+          "risk_free_rate": 0.0,
+          "risk_free_rate_per_period": 0.0,
+          "stored_returns_sampling": "bar",
+          "trade_scope": "closed"
+        },
+        "strategy_parameters": {
+          "d_period": 7,
+          "k_period": 21,
+          "overbought": 80.0,
+          "oversold": 20.0,
+          "smooth_k": 3
+        },
+        "unavailable": {
+          "total_slippage": "embedded_in_fill_prices"
+        }
+      },
+      "conditions": {
+        "symbol": "BTC/USDT",
+        "timeframe": "1d",
+        "start_date": "2024-01-01T00:00:00",
+        "end_date": "2024-03-01T00:00:00",
+        "fees": 0.0006,
+        "slippage": 0.0005
+      },
+      "metric_source": "bundle"
+    },
+    {
+      "rank": 2,
+      "tied": 1,
+      "value": -16.207284285648306,
+      "run_id": "narrow",
+      "scope": "test",
+      "strategy_id": "kd_crossover",
+      "revision_id": "rev-1",
+      "parameters": {
+        "k_period": 9
+      },
+      "metadata": {
+        "calculation_fallbacks": {},
+        "execution_context": {
+          "end_date": "2024-02-29T23:59:59.999999",
+          "fees": 0.0006,
+          "init_cash": 10000.0,
+          "mode": "signal",
+          "monthly_max_loss": 1500.0,
+          "periods_per_year": 365.0,
+          "position_size": null,
+          "random_seed": 42,
+          "re_entry_after_sl": true,
+          "required_return": 0.0,
+          "risk_free_rate": 0.0,
+          "signal_as_position": false,
+          "slippage": 0.0005,
+          "start_date": "2024-01-31T00:00:00",
+          "stop_loss": null,
+          "symbol": "BTC/USDT",
+          "take_profit": null,
+          "timeframe": "1h"
+        },
+        "mode": "signal",
+        "observations": {
+          "account_history_availability": "available",
+          "account_history_mark": "bar_close",
+          "accounting": "vectorbt_generic",
+          "bar_count": 720,
+          "end_date": "2024-02-29T23:00:00+00:00",
+          "execution_equity_mark": "requested_price_before_slippage",
+          "execution_records_availability": "available",
+          "execution_timestamp_semantics": "bar_timestamp_not_exact_intrabar_fill",
+          "start_date": "2024-01-31T00:00:00+00:00",
+          "trade_count": 50
+        },
+        "providers": {
+          "quantstats": "0.0.86",
+          "vectorbt": "1.2.0"
+        },
+        "schema_version": 1,
+        "settings": {
+          "calendar_timezone": "UTC",
+          "calmar_drawdown_sampling": "observed_daily",
+          "cost_model": "commission_and_slippage_adjusted_fill_prices",
+          "drawdown_sampling": "bar",
+          "excess_return_adjustment": "configured_rate_before_quantstats",
+          "frequency": "1h",
+          "initial_cash": 10000.0,
+          "missing_dates": "not_filled",
+          "period_pnl_std_ddof": 0,
+          "periods_per_year": 365.0,
+          "required_return": 0.0,
+          "required_return_per_period": 0.0,
+          "return_sampling": "observed_daily",
+          "return_std_ddof": 1,
+          "returns_basis": "simple",
+          "risk_free_rate": 0.0,
+          "risk_free_rate_per_period": 0.0,
+          "stored_returns_sampling": "bar",
+          "trade_scope": "closed"
+        },
+        "strategy_parameters": {
+          "d_period": 3,
+          "k_period": 9,
+          "overbought": 80.0,
+          "oversold": 20.0,
+          "smooth_k": 3
+        },
+        "unavailable": {
+          "total_slippage": "embedded_in_fill_prices"
+        }
+      },
+      "conditions": {
+        "symbol": "BTC/USDT",
+        "timeframe": "1d",
+        "start_date": "2024-01-01T00:00:00",
+        "end_date": "2024-03-01T00:00:00",
+        "fees": 0.0006,
+        "slippage": 0.0005
+      },
+      "metric_source": "bundle"
+    }
+  ],
+  "skipped": [],
+  "caveats": [
+    "Ranking is conditional on each scope's saved metadata, including provider versions, settings and observation periods; it does not establish a controlled comparison. Conditions describe the run's submitted period, not each scope's observed period."
+  ]
+}
+[RunCandidate fields] ['run_id', 'scope', 'strategy_id', 'revision_id', 'parameters', 'metadata', 'conditions', 'metric_source']
+[search in ranking JSON] 'n_trials': absent
+[search in ranking JSON] 'trial_count': absent
+[search in ranking JSON] 'combos': absent
+[search in ranking JSON] 'trial/': absent
+[search in ranking JSON] 'search': absent
+[search in ranking JSON] 'dispersion': absent
+[search in ranking JSON] 'std': FOUND

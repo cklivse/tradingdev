@@ -1,0 +1,22 @@
+[setup] dataset_id=ds_fa575b4d7a2fef68 model_id=7e63d448acdba211
+[rows after A] 1
+[rows after B] 1; A entry_id=a55da38aea2f299b B entry_id=a55da38aea2f299b B replaced=True
+[A backend]  recorded = {"entry_id": "a55da38aea2f299b", "replaced": false, "context": "BTC/USDT 1h 2024-01-01..2024-01-12 (horizon=1, window=20, quantiles=5, features=technical, code=f091ab026ed1b891, data=a0d118a3cd2e0043341a7a5cb430f0bfb2cbf2c4d7d55c7b7d8b5f63afe3bb77)", "n_candidates": 1, "signal_fingerprint": "5e458efd13fc71bd", "method_family": "ml_model", "method_name": "", "training_dataset_id": "ds_fa575b4d7a2fef68"}
+[B caller]   recorded = {"entry_id": "a55da38aea2f299b", "replaced": true, "context": "BTC/USDT 1h 2024-01-01..2024-01-12 (horizon=1, window=20, quantiles=5, features=technical, code=f091ab026ed1b891, data=a0d118a3cd2e0043341a7a5cb430f0bfb2cbf2c4d7d55c7b7d8b5f63afe3bb77)", "n_candidates": 1, "signal_fingerprint": "e01bbae7db789157", "method_family": "ml_model", "method_name": "", "training_dataset_id": "ds_fa575b4d7a2fef68"}
+[fields] same field set: True; fields = ['context', 'dataset_id', 'entry_id', 'label', 'method_family', 'method_name', 'metrics', 'model_id', 'n_observations', 'parameters', 'signal_fingerprint', 'training_dataset_id']
+[field-by-field] (same = identical value in both rows)
+  context                  same   A={'symbol': 'BTC/USDT', 'timeframe': '1h', 'start_date': '2024-01-01',    B={'symbol': 'BTC/USDT', 'timeframe': '1h', 'start_date': '2024-01-01', 
+  dataset_id               same   A=ds_fa575b4d7a2fef68   B=ds_fa575b4d7a2fef68
+  entry_id                 same   A=a55da38aea2f299b   B=a55da38aea2f299b
+  label                    same   A=xgboost_direction (xgboost)   B=xgboost_direction (xgboost)
+  method_family            same   A=ml_model   B=ml_model
+  method_name              same   A=   B=
+  metrics                  DIFF   A=<differs>   B=<differs>
+  model_id                 same   A=7e63d448acdba211   B=7e63d448acdba211
+  n_observations           same   A=231   B=231
+  parameters               same   A={'colsample_bytree': 0.8, 'early_stopping_rounds': 10, 'learning_rate'   B={'colsample_bytree': 0.8, 'early_stopping_rounds': 10, 'learning_rate'
+  signal_fingerprint       DIFF   A=5e458efd13fc71bd   B=e01bbae7db789157
+  training_dataset_id      same   A=ds_fa575b4d7a2fef68   B=ds_fa575b4d7a2fef68
+[origin-like fields] none
+[family property] B row=ml_model
+[metrics differing] {'ic_mean': (0.396724138033302, -0.07022382767802318), 'rank_ic_mean': (0.3007709138713994, -0.07117321605901547)}
