@@ -22,18 +22,16 @@ Code and tests are copied file by file from `feat/stats-py314` without rewriting
 - `__init__.py` carries a one-line docstring; the full package guide comes later from #38.
 - Depends on: nothing (based on `main`).
 
-This PR creates `src/tradingdev/domain/statistics/`, a directory that does not exist on `main`. Nothing on `main` imports it, and the PR changes no existing file: its diff is five added files (four under `src/tradingdev/domain/statistics/`, one test file). So apart from its own 36 tests, the full suite cannot be affected by it. As a check, the three test files that scan the whole source tree or package (`tests/integration/test_import_migration.py`, `tests/mcp/test_strategy_contracts.py`, `tests/mcp/test_strategy_save_failures.py`) give identical per-test results with and without this PR (44 tests; the same 5 fail on both, all with `runtime_unavailable`, see below).
+This PR creates `src/tradingdev/domain/statistics/`, a directory that does not exist on `main`. Nothing on `main` imports it, and the PR changes no existing file: its diff is five added files (four under `src/tradingdev/domain/statistics/`, one test file).
 
 ## Verification
 
-This repository has no CI, so nothing on GitHub runs these checks. Checks run locally on this branch merged with `main` 741fd84:
+This repository has no CI, so nothing on GitHub runs these checks. Checks were run locally on this branch merged into `main`, verified at `main` c246355:
 
-- Merged with `main` 741fd84 without conflicts.
 - `scripts/check-fast.sh`: passes.
 - This part's tests (`tests/domain/statistics`): 36 passed.
 
 Why the full suite is not reported as green: since upstream aa2d3f4 (2026-11-06, `feat!: isolate generated strategies across product entrypoints`), the integration tests that execute generated strategies need a prebuilt `tradingdev-strategy-runtime` image, and this environment does not have one. `docs/development.md` states that a missing daemon, required capability or prebuilt image makes those tests fail, and the tests do not download the image themselves. The same tests fail for the same reason on a clean `main`, so they are unrelated to this part. If a reviewer's environment has that image, their run will be the first complete result.
 
-Separately, the two local full-suite runs made so far (on a clean `main` 741fd84 and on Part 1 merged with it) were both stopped by an external SIGTERM at the same point, about 61% through, so no complete local full-suite result exists yet. That is being investigated on its own and happens on a clean `main` too.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

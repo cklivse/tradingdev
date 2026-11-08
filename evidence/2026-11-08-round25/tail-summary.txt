@@ -1,0 +1,130 @@
+                    "exception": "strategy_execution_failed",
+                    "system_exit": "strategy_execution_failed",
+                    "exception": "strategy_execution_failed",
+                    "system_exit": "strategy_execution_failed",
+                    "exception": "strategy_execution_failed",
+                    "system_exit": "strategy_execution_failed",
+                    "exception": "strategy_execution_failed",
+                    "system_exit": "strategy_execution_failed",
+                    "exception": "strategy_execution_failed",
+                    "system_exit": "strategy_execution_failed",
+______ test_memory_exhaustion_is_a_failed_execution_with_verified_cleanup ______
+    def test_memory_exhaustion_is_a_failed_execution_with_verified_cleanup(
+FAILED tests/e2e/test_codex_verifier.py::test_verifier_checks_generated_strategy_in_a_separate_process
+FAILED tests/e2e/test_codex_verifier.py::test_novice_verifier_rejects_executed_short_revision_after_current_is_repaired
+FAILED tests/e2e/test_codex_verifier.py::test_verifier_terminates_hanging_generated_code_and_removes_artifacts
+FAILED tests/e2e/test_llm_execution_plans.py::test_execution_plan_live_fixtures_without_model[walk_forward]
+FAILED tests/integration/test_generated_protocol.py::test_direct_calls_keep_training_rng_and_exact_frame_types
+FAILED tests/integration/test_generated_protocol.py::test_parameter_inspection_captures_and_validates_without_construction
+FAILED tests/integration/test_generated_protocol.py::test_parameter_inspection_rejects_non_data_constructor_contracts[python-default]
+FAILED tests/integration/test_generated_protocol.py::test_parameter_inspection_rejects_non_data_constructor_contracts[nonfinite-default]
+FAILED tests/integration/test_generated_protocol.py::test_parameter_inspection_rejects_non_data_constructor_contracts[service-injection]
+FAILED tests/integration/test_generated_protocol.py::test_parameter_inspection_rejects_non_data_constructor_contracts[wrong-base-class]
+FAILED tests/integration/test_generated_protocol.py::test_worker_rejects_source_identity_changes_and_reconstruction[hash]
+FAILED tests/integration/test_generated_protocol.py::test_worker_rejects_source_identity_changes_and_reconstruction[identity]
+FAILED tests/integration/test_generated_protocol.py::test_worker_rejects_source_identity_changes_and_reconstruction[source]
+FAILED tests/integration/test_generated_protocol.py::test_worker_rejects_source_identity_changes_and_reconstruction[reconstruct]
+FAILED tests/integration/test_generated_protocol.py::test_input_mutation_preserves_diagnostics_and_available_analysis
+FAILED tests/integration/test_generated_protocol.py::test_failed_or_timed_out_calls_clean_up_and_allow_the_next_session[import_exit]
+FAILED tests/integration/test_generated_protocol.py::test_failed_or_timed_out_calls_clean_up_and_allow_the_next_session[constructor_exit]
+FAILED tests/integration/test_generated_protocol.py::test_failed_or_timed_out_calls_clean_up_and_allow_the_next_session[signals_loop]
+FAILED tests/integration/test_generated_protocol.py::test_proxy_rejects_non_object_parameter_and_trace_values[parameters]
+FAILED tests/integration/test_generated_protocol.py::test_proxy_rejects_non_object_parameter_and_trace_values[trace]
+FAILED tests/integration/test_generated_runtime.py::test_factory_binds_saved_program_and_settings_to_a_managed_instance
+FAILED tests/integration/test_generated_runtime.py::test_source_drift_is_rejected_before_a_new_instance_is_opened
+FAILED tests/integration/test_generated_runtime.py::test_lazy_parameter_grid_reuses_one_unit_without_constructing_a_strategy
+FAILED tests/integration/test_generated_worker_cleanup.py::test_supervisor_removes_container_with_detached_generated_descendant[cancel_other_session]
+FAILED tests/integration/test_generated_worker_cleanup.py::test_supervisor_removes_container_with_detached_generated_descendant[timeout]
+FAILED tests/integration/test_generated_worker_cleanup.py::test_supervisor_removes_container_with_detached_generated_descendant[abrupt]
+FAILED tests/integration/test_mcp_cleanup.py::test_active_worker_and_files_are_removed_on_context_exit[success]
+FAILED tests/integration/test_mcp_cleanup.py::test_active_worker_and_files_are_removed_on_context_exit[failure]
+FAILED tests/integration/test_mcp_cleanup.py::test_active_worker_and_files_are_removed_on_context_exit[timeout]
+FAILED tests/integration/test_mcp_optimization.py::test_optimization_rejects_walk_forward_config_through_mcp
+FAILED tests/integration/test_mcp_optimization.py::test_optimization_confirmation_search_and_persisted_oos
+FAILED tests/integration/test_mcp_protocol.py::test_generated_strategy_full_mcp_workflow
+FAILED tests/integration/test_mcp_protocol.py::test_rejected_drafts_diagnostics_and_repair
+FAILED tests/integration/test_mcp_protocol.py::test_worker_failure_is_reported_and_cancelled_job_stops
+FAILED tests/integration/test_mcp_protocol.py::test_walk_forward_runs_through_real_worker[automatic]
+FAILED tests/integration/test_mcp_protocol.py::test_walk_forward_runs_through_real_worker[explicit_offset_dates]
+FAILED tests/integration/test_mcp_protocol.py::test_walk_forward_runs_through_real_worker[purged]
+FAILED tests/integration/test_mcp_research_intake.py::test_omitted_finances_and_inherited_choices_survive_worker_round_trip
+FAILED tests/integration/test_parameter_experiments.py::test_parameter_experiments_preserve_source_and_base_settings[False]
+FAILED tests/integration/test_parameter_experiments.py::test_parameter_experiments_preserve_source_and_base_settings[True]
+FAILED tests/integration/test_preflight_temporary_files.py::test_preflight_removes_worker_library_temporary_files_after_process_exit[success]
+FAILED tests/integration/test_preflight_temporary_files.py::test_preflight_removes_worker_library_temporary_files_after_process_exit[failure]
+FAILED tests/integration/test_preflight_temporary_files.py::test_preflight_removes_worker_library_temporary_files_after_process_exit[timeout]
+FAILED tests/integration/test_preflight_temporary_files.py::test_preflight_removes_worker_library_temporary_files_after_process_exit[library_failure]
+FAILED tests/integration/test_preflight_temporary_files.py::test_probe_teardown_stops_processes_after_assertion_failure
+FAILED tests/integration/test_preflight_temporary_files.py::test_probe_teardown_stops_processes_when_preflight_cleanup_fails
+FAILED tests/integration/test_preflight_temporary_files.py::test_probe_teardown_retains_files_when_its_cleanup_cannot_be_verified[exception]
+FAILED tests/integration/test_preflight_temporary_files.py::test_probe_teardown_retains_files_when_its_cleanup_cannot_be_verified[unverified_return]
+FAILED tests/integration/test_preflight_workers.py::test_real_preflight_parent_removes_validation_workspace_after_worker_exit[success-backtest]
+FAILED tests/integration/test_preflight_workers.py::test_real_preflight_parent_removes_validation_workspace_after_worker_exit[success-walk_forward]
+FAILED tests/integration/test_preflight_workers.py::test_real_preflight_parent_removes_validation_workspace_after_worker_exit[success-optimization]
+FAILED tests/integration/test_preflight_workers.py::test_real_preflight_parent_removes_validation_workspace_after_worker_exit[success-comparison]
+FAILED tests/integration/test_preflight_workers.py::test_real_preflight_parent_removes_validation_workspace_after_worker_exit[exception-backtest]
+FAILED tests/integration/test_preflight_workers.py::test_real_preflight_parent_removes_validation_workspace_after_worker_exit[exception-comparison]
+FAILED tests/integration/test_preflight_workers.py::test_real_preflight_parent_removes_validation_workspace_after_worker_exit[timeout-backtest]
+FAILED tests/integration/test_preflight_workers.py::test_real_preflight_parent_removes_validation_workspace_after_worker_exit[timeout-comparison]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[validate-success]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[validate-exception]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[validate-system_exit]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[validate-timeout]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[dry_run-success]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[dry_run-exception]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[dry_run-system_exit]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[dry_run-timeout]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[validate-import_system_exit]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[validate-constructor_system_exit]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[validate-import_timeout]
+FAILED tests/integration/test_strategy_check_workers.py::test_service_survives_runtime_failure[validate-constructor_timeout]
+FAILED tests/integration/test_strategy_check_workers.py::test_real_mcp_survives_exit_and_accepts_repaired_revision[validate_strategy]
+FAILED tests/integration/test_strategy_check_workers.py::test_real_mcp_survives_exit_and_accepts_repaired_revision[dry_run_strategy]
+FAILED tests/integration/test_strategy_isolation.py::test_kernel_enforces_identity_files_network_and_resource_limits
+FAILED tests/integration/test_strategy_isolation.py::test_detached_session_is_removed_for_each_completion_path[normal]
+FAILED tests/integration/test_strategy_isolation.py::test_detached_session_is_removed_for_each_completion_path[failure]
+FAILED tests/integration/test_strategy_isolation.py::test_detached_session_is_removed_for_each_completion_path[timeout]
+FAILED tests/integration/test_strategy_isolation.py::test_process_limit_contains_forking_and_close_does_not_stop_another_unit
+FAILED tests/integration/test_strategy_isolation.py::test_lost_host_controller_still_expires_and_control_record_is_recoverable
+FAILED tests/integration/test_strategy_isolation.py::test_memory_exhaustion_is_a_failed_execution_with_verified_cleanup
+FAILED tests/integration/test_strategy_isolation.py::test_undrained_output_does_not_block_explicit_cleanup[stdout]
+FAILED tests/integration/test_strategy_isolation.py::test_undrained_output_does_not_block_explicit_cleanup[stderr]
+FAILED tests/mcp/test_strategy_contracts.py::test_invalid_frame_diagnostics_survive_typed_mcp_response[        result["signal"] = np.nan\n        return result-invalid_signal_values]
+FAILED tests/mcp/test_strategy_contracts.py::test_invalid_frame_diagnostics_survive_typed_mcp_response[        return result.iloc[:-1].copy()-signal_row_count_mismatch]
+FAILED tests/mcp/test_strategy_contracts.py::test_invalid_frame_diagnostics_survive_typed_mcp_response[        result.index = result.index + 1000\n        return result-signal_index_mismatch]
+FAILED tests/mcp/test_strategy_contracts.py::test_typed_lifecycle_returns_signal_evidence_and_rejects_wrong_state
+FAILED tests/mcp/test_strategy_contracts.py::test_checking_an_older_revision_does_not_approve_current
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_accepts_completed_backtest[sma]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_accepts_saved_custom_report[sma]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_registration_corruption[sma-path]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_registration_corruption[sma-report_id]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_manifest_corruption[sma-run_ids]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_manifest_corruption[sma-available_scopes]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_manifest_corruption[sma-html_sha256]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_incorrect_signals[sma]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_incorrect_yaml_parameters[sma]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_incorrect_stored_metrics[sma]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_evidence_requires_model_to_query_result[sma]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_accepts_completed_backtest[momentum]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_accepts_saved_custom_report[momentum]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_registration_corruption[momentum-path]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_registration_corruption[momentum-report_id]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_manifest_corruption[momentum-run_ids]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_manifest_corruption[momentum-available_scopes]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_manifest_corruption[momentum-html_sha256]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_incorrect_signals[momentum]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_incorrect_yaml_parameters[momentum]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_incorrect_stored_metrics[momentum]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_evidence_requires_model_to_query_result[momentum]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_accepts_completed_backtest[experiment]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_accepts_saved_custom_report[experiment]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_registration_corruption[experiment-path]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_registration_corruption[experiment-report_id]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_manifest_corruption[experiment-run_ids]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_manifest_corruption[experiment-available_scopes]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_report_manifest_corruption[experiment-html_sha256]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_incorrect_signals[experiment]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_incorrect_yaml_parameters[experiment]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_verifier_rejects_incorrect_stored_metrics[experiment]
+ERROR tests/e2e/test_workflow_verifier.py::test_workflow_evidence_requires_model_to_query_result[experiment]
+==== 84 failed, 2760 passed, 7 deselected, 33 errors in 1463.25s (0:24:23) =====
