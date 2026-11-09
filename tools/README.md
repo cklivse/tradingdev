@@ -29,3 +29,13 @@ Added 2026-11-01 (rounds 15b–16):
 - Known incident: on 2026-11-01 one run was killed by SIGTERM at 76%
   (`tests/e2e/test_workflow_verifier.py`, exit 241) with no failures before
   it; the sender was not found. A rerun of the same commit passed (7480).
+
+Added 2026-11-09 (round 34):
+
+- `marp_to_pptx.js <slides.md> <out.pptx>`: rebuilds a Marp deck that uses the
+  tradingdev theme as an editable PowerPoint file (pptxgenjs 3.12.0). It keeps
+  tables, links, headers, footers, page numbers and speaker notes, takes sizes
+  and colors from `theme.css` at 96 px per inch, and shrinks a slide (to 80% at
+  most) when its estimated height doesn't fit. Needs `pptxgenjs` on `NODE_PATH`
+  and `PPTX_SKILL` pointing at the pptx skill directory (for `apply_theme.js`).
+  It handles only what the statistics talk uses: no images, Mermaid or blockquotes.
