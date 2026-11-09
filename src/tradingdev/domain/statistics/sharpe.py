@@ -4,13 +4,12 @@ All functions take a return series supplied by the caller, such as the
 daily returns from :func:`tradingdev.domain.statistics.periods.period_returns`,
 and never read runs, artifacts, or caches.
 
-Frequency: compute these statistics on daily returns. Annualising
-intraday returns with ``sqrt(periods_per_year)`` assumes independent
-periods, but intraday strategy returns are autocorrelated, so an hourly
-Sharpe is systematically biased against the daily one; a KD strategy
-measured -8.70 annualised from hourly returns versus -7.57 from daily
-returns. ``periods_per_year`` is therefore normally 365 for crypto or 252
-for exchange-traded markets.
+Frequency: use daily returns for daily-return analysis and choose
+``periods_per_year`` for the caller's annualisation basis. Square-root
+annualisation does not remove frequency dependence: serial correlation and
+compounding can change the ratio, and the direction depends on the return
+process. Report the frequency and compare ratios at matching frequencies
+and annualisation bases.
 
 Conventions:
 
@@ -60,23 +59,23 @@ UnavailableReason = Literal[
 
 @dataclass(frozen=True)
 class IntervalUnavailable:
-    """Why a bootstrap interval is missing, with what could still be computed.
+    """Why a Sharpe interval is missing, with what could still be computed.
 
     The reasons are checked in this order, so the first that applies wins:
 
     * ``"insufficient_observations"``: fewer than ``min_observations``
-      returns (after alignment, for comparisons), so the block length
-      cannot be estimated. Monthly returns over one year always land here.
-    * ``"undefined_statistic"``: the statistic of the returns themselves
-      is undefined, such as the Sharpe ratio of constant returns.
-    * ``"no_valid_resample"``: no resample defines the statistic.
+      returns, so the sample is too short for the bootstrap. Monthly
+      returns over one year always land here.
+    * ``"undefined_statistic"``: the Sharpe ratio of the returns is
+      undefined, such as for constant returns.
+    * ``"no_valid_resample"``: no resample has a defined Sharpe ratio.
 
     Attributes:
         reason: Which of the cases above applies.
-        estimate: The statistic of the returns, or ``None`` when it is
+        estimate: The annualised Sharpe ratio, or ``None`` when it is
             undefined; it is reported even when the sample is too short to
-            bootstrap. For a paired comparison it is the difference.
-        observations: Number of returns, after alignment for comparisons.
+            bootstrap.
+        observations: Number of returns in the input series.
         min_observations: Number of returns the bootstrap requires.
         reps: Resamples drawn; ``0`` when the bootstrap did not run.
     """
@@ -137,7 +136,9 @@ class DeflatedSharpe:
             for comparison; ``psr_vs_zero - dsr`` is what the
             selection-bias correction costs.
         hurdle_annualised: The hurdle ``SR*_0`` annualised, the expected
-            maximum Sharpe of ``n_trials`` skill-less trials.
+            maximum Sharpe of ``n_trials`` skill-less trials. This can
+            overflow to infinity even when the validated per-period
+            hurdle is finite; this output is not separately validated.
         n_trials: Number of trials ``N`` used for the hurdle.
         trial_sharpe_std_annualised: Sample standard deviation
             (``ddof=1``) of the annualised trial Sharpe ratios; ``None``
@@ -202,40 +203,33 @@ def sharpe_interval_outcome(
 ) -> SharpeInterval | IntervalUnavailable:
     """Stationary-bootstrap percentile interval of the annualised Sharpe.
 
-    Strategy returns are autocorrelated, and an iid bootstrap that shuffles
-    single periods destroys that dependence and understates the sampling
-    variability. The stationary bootstrap of Politis and Romano (1994)
-    resamples blocks with geometrically distributed lengths, keeping the
-    short-range dependence while producing a stationary resample.
+    Strategy returns can exhibit serial dependence. An iid bootstrap that
+    shuffles single periods removes that dependence and may misstate the
+    sampling variability. The stationary bootstrap of Politis and Romano
+    (1994) resamples blocks with geometrically distributed lengths,
+    preserving local order within each block. This does not make inference
+    valid for an arbitrary non-stationary return process.
 
     Block size: the blocks must keep the dependence the Sharpe ratio
     depends on, which is that of the mean and of the variance. Returns can
     be nearly uncorrelated while their volatility persists for long
-    stretches, and blocks fitted to the returns alone then cut those
+    stretches, and blocks fitted to the returns alone can cut those
     stretches apart and understate the variability. The mean block length
     is therefore the larger of two Politis and White (2004) automatic
     estimates, with the correction of Patton, Politis and White (2009), as
     computed by :func:`arch.bootstrap.optimal_block_length`: one for the
     returns and one for the squared returns, rounded up to a whole number
-    of periods and at least one. Nearly independent returns with stable
-    volatility still get a block length near one. The estimate needs a
-    reasonable sample, so fewer than ``MIN_BOOTSTRAP_OBSERVATIONS`` returns
-    give no interval. That is 20 periods at any frequency: 20 days of daily
-    returns, but 20 months of monthly ones.
+    of periods and at least one. Finite-sample block estimates can vary even
+    for independent returns. This API requires at least
+    ``MIN_BOOTSTRAP_OBSERVATIONS`` returns: 20 periods at any frequency,
+    such as 20 days of daily returns or 20 months of monthly ones. Meeting
+    that threshold does not establish that the sample is adequate for
+    reliable inference.
 
-    The rule improves coverage but does not guarantee it. In the review
-    simulation (two volatility regimes with standard deviations 0.001 and
-    0.02, switching with probability 0.01 per period, 1000 periods, 100
-    samples, 300 resamples), nominal 95% intervals covered the true Sharpe
-    ratio in 70 samples, against 49 with blocks fitted to the returns
-    alone; regimes lasting about a hundred periods are few in one sample,
-    which no block length repairs. The jackknife influence values used for
-    paired differences covered 60 in the same simulation, because the
-    variance term is diluted by the mean term. With the same settings the
-    rule kept the previous coverage on independent returns (94 of 100) and
-    on AR(1) returns with coefficient 0.5 (93); on GARCH(1,1) returns with
-    a per-period Sharpe ratio of 0.05 it covered 89 against 91, within the
-    sampling error of 100 samples.
+    Automatic block selection does not guarantee nominal coverage. When
+    regimes persist for much of the sample, too few transitions may be
+    observed to estimate the sampling variability reliably, regardless
+    of block length.
 
     Pass ``block_size`` to use a fixed mean block length instead, reported
     back unchanged. Give one whenever the estimate is known to be too
@@ -244,8 +238,9 @@ def sharpe_interval_outcome(
     the sample), or a sample long enough to bootstrap but too short for a
     reliable estimate. A given ``block_size`` does not lift the minimum:
     fewer than ``MIN_BOOTSTRAP_OBSERVATIONS`` returns still give no
-    interval. A block length that is too short narrows the interval; one
-    that is too long costs only precision.
+    interval. Blocks that are too short can omit dependence; excessive
+    block lengths can leave too few block restarts and produce unreliable
+    or nearly degenerate intervals. Either choice can impair coverage.
 
     Returns an :class:`IntervalUnavailable` when the sample is too short,
     the Sharpe ratio itself is undefined, or no resample has a defined
@@ -317,20 +312,21 @@ def probabilistic_sharpe_ratio(
 
     where ``SR`` is the per-period (not annualised) Sharpe ratio, ``g3`` the
     skewness and ``g4`` the (non-excess) kurtosis of the returns, both
-    computed from population moments. Negative skew and fat tails widen
-    the Sharpe estimator's standard error and lower the probability.
+    computed from population moments. For a positive ``SR``, more negative
+    skew and greater kurtosis increase the standard error, holding the
+    other terms fixed. A larger standard error moves the probability
+    towards 0.5: down when ``SR > SR*`` and up when ``SR < SR*``. The skew
+    term reverses direction for negative ``SR``.
 
     ``benchmark_sr`` is per period as well; divide an annual benchmark by
     ``sqrt(periods_per_year)``.
 
-    Assumption: the returns are independent. The standard error in the
-    denominator is the variance of the Sharpe estimator for iid returns; it
-    accounts for skew and fat tails but has no term for serial correlation.
-    Positively autocorrelated returns have a larger true standard error, so
-    the probability is too optimistic (in a simulation with AR(1)
-    coefficient 0.2, ``PSR > 0.95`` occurred 9% of the time instead of the
-    nominal 5%); negatively autocorrelated returns make it too conservative.
-    See "Independence Assumptions" in docs/statistics_bootstrap_methods.md.
+    Assumption: the returns are independent. The standard error uses an
+    asymptotic variance expression for iid returns; it accounts for skew
+    and fat tails but has no term for serial correlation.
+    Serial correlation can invalidate the reported probability; this
+    function does not estimate an effective sample size or adjust for
+    serial correlation.
 
     Returns ``None`` with fewer than two returns, zero dispersion, or a
     non-positive variance term.
@@ -344,7 +340,7 @@ def probabilistic_sharpe_ratio(
     if sharpe is None:
         return None
     # Skewness and kurtosis are scale-free too; the fourth moment overflows
-    # above about 1e77 without this exact rescaling.
+    # above about 1e77 without rescaling.
     values = rescaled(values)[0]
     deviations = values - values.mean()
     variance = float(np.mean(deviations**2))
@@ -389,10 +385,8 @@ def deflated_sharpe_ratio(
     ``n_trials`` must be the total number of trials searched, including
     failed trials that were dropped because their metric was undefined. It
     defaults to the number of trial Sharpes, which is correct only when no
-    trial was dropped. With plateau analysis, :func:`trials_from_metrics
-    <tradingdev.domain.statistics.plateau.trials_from_metrics>` returns
-    the dropped count for this purpose; pass
-    ``n_trials = len(result.trials) + result.dropped_count``. Passing only
+    trial was dropped. Track all attempted trials before filtering out
+    undefined Sharpes and pass that total as ``n_trials``. Passing only
     the surviving count underestimates ``N`` and under-corrects the
     selection bias, without any error. With ``N = 1`` there is no
     selection, and with equal trial Sharpes there is no dispersion; both
@@ -414,8 +408,8 @@ def deflated_sharpe_ratio(
     correlation of their returns and is out of scope. The DSR is also a
     :func:`probabilistic_sharpe_ratio` against a raised benchmark, so it
     inherits that function's assumption of independent returns unchanged:
-    positively autocorrelated returns make it too optimistic, separately
-    from any error in the trial correction.
+    serial correlation can invalidate its probability, separately from any
+    error in the trial correction.
 
     Two selection corrections: this project corrects for multiple
     comparisons in two ways, one per metric family.
@@ -435,21 +429,30 @@ def deflated_sharpe_ratio(
     They answer different questions: the DSR asks how likely the selected
     strategy's Sharpe beats what luck alone would produce in ``N`` trials;
     Bonferroni asks whether any of ``N`` IC tests would reject at
-    family-wise ``alpha``. They are not interchangeable, and never both
-    apply to the same number: each already accounts for the whole
-    selection, so stacking them corrects one selection twice. When reports
-    show both side by side, label each figure with the correction it
-    carries. They also differ in what they assume about independence, in
-    two dimensions. Across trials or tests: Bonferroni rests on the union
-    bound, which holds whatever the dependence between the ``N`` tests, so
-    correlated candidates only make it conservative; this function's hurdle
+    family-wise ``alpha``. Their candidate populations also differ: this
+    function requires all attempted trials in ``n_trials``, while
+    ``rank_entries`` in the ML leaderboard passes only ``ranked_total``
+    to its Bonferroni caveat. That count includes rankable candidates
+    before ``top_k`` truncation, but excludes skipped entries and any
+    candidates filtered out before ranking. The caveat alone does not
+    establish coverage of the complete research search history.
+
+    The corrections are not interchangeable. When reporting them side by
+    side, label the metric, correction and candidate population; do not
+    apply a second correction to the same selection without defining the
+    statistical procedure. They also differ in what they assume about
+    independence, in two dimensions. Across trials or tests: Bonferroni
+    rests on the union bound, which holds whatever the dependence between
+    the ``N`` tests, so correlated candidates only make it conservative;
+    this function's hurdle
     is the expected maximum of ``N`` independent trials, as the limitation
     above describes. Within one series: each IC t-statistic Bonferroni
     compares (``ic_statistics`` in ``tradingdev.domain.ml.evaluation.metrics``)
-    treats the ICs of non-overlapping windows as independent, and this
-    function treats the returns as independent through its PSR. So the
-    DSR needs both kinds of independence and Bonferroni only the second.
-    See "Independence Assumptions" in docs/statistics_bootstrap_methods.md.
+    approximates effective sample size as ``bars // window`` to account for
+    overlap, without estimating remaining serial dependence. This function
+    uses the independent-return variance through its PSR. Bonferroni's
+    robustness to dependence between tests does not repair miscalibrated
+    individual IC tests.
 
     Returns ``None`` when :func:`probabilistic_sharpe_ratio` is undefined
     for ``returns``, or when ``N >= 2`` but fewer than two trial Sharpes
@@ -460,8 +463,8 @@ def deflated_sharpe_ratio(
             return or trial Sharpe is not a finite number, ``n_trials`` is
             not a positive integer or too large for a float, ``n_trials``
             is smaller than the number of trial Sharpes, no trial
-            Sharpes are given without ``n_trials``, or the trial Sharpes
-            are so dispersed that the hurdle is not a finite number.
+            Sharpes are given without ``n_trials``, the dispersion
+            calculation overflows, or the per-period hurdle is nonfinite.
     """
     scale = _annualisation(periods_per_year)
     trial_sharpes = np.array(
@@ -559,10 +562,10 @@ def _period_sharpe(values: npt.NDArray[np.float64]) -> float | None:
     # Equal values can still yield a rounding-error std, so test spread exactly.
     if values.size < 2 or float(values.max()) == float(values.min()):
         return None
-    # The ratio is unchanged by a positive scale, so an exact power-of-two
-    # rescaling keeps extreme magnitudes or tiny spreads from overflowing or
-    # underflowing the variance. Each bootstrap resample is rescaled on its
-    # own: a resample without an outlier must not inherit the outlier's scale.
+    # The ratio is scale-invariant in exact arithmetic. Power-of-two
+    # rescaling reduces overflow/underflow risk, within _scaling's floating
+    # point limits. Each resample gets its own scale: a resample without an
+    # outlier must not inherit that outlier's scale.
     values = rescaled(values)[0]
     std = float(values.std(ddof=1))
     return float(values.mean()) / std
