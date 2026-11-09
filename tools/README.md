@@ -42,3 +42,15 @@ Added 2026-11-09 (round 34):
   After writing, it keeps only the first `<a:pPr>` of each paragraph (pptxgenjs
   writes one per run, which hid the bullet of any item with bold or code) and
   sets bullet color to the body color. Round 35 added this fix.
+
+Added 2026-11-09 (round 36):
+
+- `font_widths.py <slides.md> <out.json>`: measures every character of the deck
+  in the preview fonts (Noto Sans CJK TC regular and bold, Liberation Mono,
+  found through fontconfig) and writes the advance widths in em. Run it with a
+  Python that has Pillow.
+- `marp_to_pptx.js` now reads that table through `WIDTHS=<out.json>`. Table
+  column widths are tuned to avoid a stray character or bracket on its own line:
+  a column is widened when that keeps the table no taller and leaves fewer such
+  orphans. It also puts a zero-width space after 、，； etc. when Latin text or
+  code follows, because LibreOffice otherwise breaks inside paths at "/".

@@ -1,5 +1,6 @@
 // Convert the Marp deck (slides.md + tradingdev theme) into an editable .pptx.
-// Usage: node build_pptx.js slides.md out.pptx
+// Usage: WIDTHS=widths.json node marp_to_pptx.js slides.md out.pptx
+// (widths.json from font_widths.py; without it, character widths are estimated)
 // Layout follows theme.css at 96 px per inch (1280x720 px = 13.333x7.5 in, 1 px = 0.75 pt).
 const fs = require("fs");
 const pptxgen = require("pptxgenjs");
@@ -84,7 +85,8 @@ function parseBlocks(body) {
 }
 
 // Inline markdown -> styled segments {text, bold, code, italic, link, br}
-function inline(s, st = {}) {
+const inline = (s) => addBreakHints(inlineSegs(s));
+function inlineSegs(s, st = {}) {
   const out = [];
   const re = /`([^`]+)`|\[((?:[^\]`]|`[^`]*`)+)\]\(([^)\s]+)\)|\*\*(.+?)\*\*|\*([^*\n]+)\*/g;
   let last = 0, m;
@@ -92,20 +94,47 @@ function inline(s, st = {}) {
   while ((m = re.exec(s))) {
     plain(s.slice(last, m.index));
     if (m[1] !== undefined) out.push({ ...st, text: m[1], code: true });
-    else if (m[2] !== undefined) out.push(...inline(m[2], { ...st, link: m[3] }));
-    else if (m[4] !== undefined) out.push(...inline(m[4], { ...st, bold: true }));
-    else out.push(...inline(m[5], { ...st, italic: true }));
+    else if (m[2] !== undefined) out.push(...inlineSegs(m[2], { ...st, link: m[3] }));
+    else if (m[4] !== undefined) out.push(...inlineSegs(m[4], { ...st, bold: true }));
+    else out.push(...inlineSegs(m[5], { ...st, italic: true }));
     last = re.lastIndex;
   }
   plain(s.slice(last));
   return out;
 }
 
+// LibreOffice does not break after 、 or ， when Latin text or code follows,
+// so it breaks inside paths at "/" instead. A zero-width space after such
+// punctuation gives every renderer the same break point the layout assumes.
+function addBreakHints(segs) {
+  const P = /[、，；：。！？）」』】]/, CJK = /[\u2e80-\u9fff\u3000-\u303f\uff00-\uffef\uf900-\ufaff\s]/;
+  segs.forEach((g, i) => {
+    if (!g.text) return;
+    let t = "";
+    const chars = [...g.text];
+    chars.forEach((ch, k) => {
+      t += ch;
+      if (!P.test(ch)) return;
+      const next = k + 1 < chars.length ? chars[k + 1] : (segs.slice(i + 1).find((x) => x.text) || {}).text?.[0];
+      if (next && !CJK.test(next)) t += "\u200b";
+    });
+    g.text = t;
+  });
+  return segs;
+}
+
 // ---------- measure ----------
+// Widths come from a per-character table measured from the preview fonts
+// (font_widths.py); characters missing from it fall back to rough estimates.
+const WIDTHS = process.env.WIDTHS ? JSON.parse(fs.readFileSync(process.env.WIDTHS, "utf8")) : null;
 const isWide = (c) => (c >= 0x2e80 && c <= 0x9fff) || (c >= 0x3000 && c <= 0x303f) || (c >= 0xff00 && c <= 0xffef) || (c >= 0xf900 && c <= 0xfaff);
-function charW(ch, mono) {
+const WIDE_RE = /[\u2e80-\u9fff\u3000-\u303f\uff00-\uffef\uf900-\ufaff]/;
+function charW(ch, mono, bold) {
   const c = ch.codePointAt(0);
-  if (isWide(c)) return 1.0;
+  if (c === 0x200b) return 0;
+  if (isWide(c)) return 1.0; // CJK is 1 em in every font involved (mono falls back to CJK)
+  const table = WIDTHS && WIDTHS[mono ? "mono" : bold ? "bold" : "sans"];
+  if (table && table[ch] !== undefined) return table[ch];
   if (mono) return 0.6;
   if (ch === " ") return 0.3;
   if (/[iljtf.,:;'|!()\[\]]/.test(ch)) return 0.32;
@@ -113,24 +142,46 @@ function charW(ch, mono) {
   if (/[A-Z0-9#]/.test(ch)) return 0.64;
   return 0.56;
 }
-// Number of lines a list of segments wraps to inside maxW points.
-function countLines(segs, size, maxW) {
-  maxW *= 0.95; // safety margin for font substitution
-  let lines = 1, w = 0;
+const segSize = (g, size) => (g.code ? size * 0.85 : size);
+const textW = (t, g, size) => [...t].reduce((a, ch) => a + charW(ch, g.code, g.bold) * segSize(g, size), 0);
+const boldify = (segs) => segs.map((g) => ({ ...g, bold: true }));
+// Break units, as LibreOffice and PowerPoint wrap them: each CJK ideograph is
+// its own unit; a run of latin, code and full-width punctuation with no space
+// is one unit, even across segments (`foo`（PSR）cannot break inside), except
+// that a line may break after full-width punctuation such as 、 and ，.
+const BREAK_AFTER = /[、，；：。！？）」』】]/;
+const IDEO = /[\u2e80-\u2fff\u3040-\u9fff\uf900-\ufaff]/;
+function units(segs, size) {
+  const out = []; // {w, space, br}
+  let cur = null;
   for (const g of segs) {
-    if (g.br) { lines++; w = 0; continue; }
-    const sz = g.code ? size * 0.85 : size;
-    const toks = g.text.match(/[⺀-鿿　-〿＀-￯]|[^\s⺀-鿿　-〿＀-￯]+\s*|\s+/g) || [];
-    for (const t of toks) {
-      const tw = [...t].reduce((a, ch) => a + charW(ch, g.code) * sz, 0);
-      if (w + tw > maxW && w > 0) { lines++; w = tw; } else w += tw;
-      while (w > maxW) { lines++; w -= maxW; }
+    if (g.br) { cur = null; out.push({ br: true }); continue; }
+    for (const ch of g.text || "") {
+      const w = charW(ch, g.code, g.bold) * segSize(g, size);
+      if (/\s/.test(ch)) { cur = null; out.push({ w, space: true }); }
+      else if (IDEO.test(ch)) { cur = null; out.push({ w }); }
+      else if (cur) cur.w += w;
+      else { cur = { w }; out.push(cur); }
+      if (BREAK_AFTER.test(ch)) cur = null; // a line may break after 、，；： and closing brackets
     }
   }
-  return lines;
+  return out;
 }
-const naturalW = (segs, size) => segs.reduce((a, g) => a + [...(g.text || "")].reduce((b, ch) => b + charW(ch, g.code) * (g.code ? size * 0.85 : size), 0), 0);
-const minWordW = (segs, size) => Math.max(0, ...segs.flatMap((g) => (g.text.match(/[^\s⺀-鿿　-〿＀-￯]+/g) || []).map((w) => [...w].reduce((b, ch) => b + charW(ch, g.code) * (g.code ? size * 0.85 : size), 0))));
+// Wrap segments inside maxW points: {lines, last} where last is the width of the final line.
+function wrapInfo(segs, size, maxW) {
+  maxW *= WIDTHS ? 0.97 : 0.95; // margin for renderer differences
+  let lines = 1, w = 0;
+  for (const u of units(segs, size)) {
+    if (u.br) { lines++; w = 0; continue; }
+    if (u.space) { w += u.w; continue; }
+    if (w + u.w > maxW && w > 0) { lines++; w = u.w; } else w += u.w;
+    while (w > maxW) { lines++; w -= maxW; }
+  }
+  return { lines, last: w, maxW };
+}
+const countLines = (segs, size, maxW) => wrapInfo(segs, size, maxW).lines;
+const naturalW = (segs, size) => segs.reduce((a, g) => a + textW(g.text || "", g, size), 0);
+const minWordW = (segs, size) => Math.max(0, ...units(segs, size).filter((u) => !u.br && !u.space).map((u) => u.w));
 
 // ---------- render ----------
 function runs(segs, ctx, extra = {}) {
@@ -174,7 +225,7 @@ function renderSlide(pres, s, idx, report) {
         const maxW = (s.cls === "chapter" || s.cls === "closing") ? px(1000) : W;
         const segs = inline(b.text);
         const lh = size * 1.25;
-        const h = countLines(segs, size, maxW * 72) * lh / 72;
+        const h = countLines(boldify(segs), size, maxW * 72) * lh / 72;
         y += gap;
         items.push({ kind: "text", y, h, w: maxW, runs: runs(segs, { size, ink, strong: ink, dark, link: strong, bold: true }), lh });
         y += h + (b.t === "h1" ? px(20) : b.t === "h2" ? px(34) * scale : px(10));
@@ -215,7 +266,7 @@ function renderSlide(pres, s, idx, report) {
       if (b.t === "table") {
         const size = s.cls === "compact" ? f(23) : f(25);
         const padV = px(s.cls === "compact" ? 13 : 16) * scale, padH = px(s.cls === "compact" ? 16 : 18);
-        const cells = b.rows.map((r) => r.map((c) => inline(c)));
+        const cells = b.rows.map((r, ri) => r.map((c) => (ri === 0 ? boldify(inline(c)) : inline(c))));
         const ncol = cells[0].length;
         const Wpt = W * 72, padPt = padH * 72 * 2;
         const nat = [...Array(ncol)].map((_, j) => Math.max(...cells.map((r) => naturalW(r[j] || [], size))) + padPt);
@@ -224,6 +275,34 @@ function renderSlide(pres, s, idx, report) {
         const sumNat = nat.reduce((a, v) => a + v, 0), sumMin = mn.reduce((a, v) => a + v, 0);
         if (sumNat <= Wpt) colW = nat.map((v) => v * Wpt / sumNat);
         else colW = mn.map((v, j) => v + (Wpt - sumMin) * (nat[j] - mn[j]) / (sumNat - sumMin));
+        // A column whose widest cell misses one line by a little would leave a
+        // stray character or bracket on its own line. Widen it to fit, taking
+        // the width from columns that wrap anyway.
+        // Smallest shortfall first.
+        const fitW = (j) => (nat[j] - padPt) / 0.95 + padPt;
+        // Layout cost: table height in lines first, then the number of orphans
+        // (a wrapped cell whose last line holds under a fifth of the width).
+        const cost = (w) => cells.reduce((a, r) => {
+          const info = r.map((c, j) => wrapInfo(c, size, w[j] - padPt));
+          const orphans = info.filter((x) => x.lines > 1 && x.last < x.maxW * 0.2).length;
+          return a + Math.max(...info.map((x) => x.lines)) * 100 + orphans;
+        }, 0);
+        // One candidate per cell that wraps: the width that puts it on one line.
+        const cands = [];
+        cells.forEach((r) => r.forEach((c, j) => {
+          const target = naturalW(c, size) / 0.95 + padPt;
+          if (target > colW[j] && target <= colW[j] * 1.35) cands.push({ j, target });
+        }));
+        cands.sort((a, b) => (a.target - colW[a.j]) - (b.target - colW[b.j]));
+        for (const { j, target } of [...cands, ...cands]) {
+          const need = target - colW[j];
+          if (need <= 0) continue;
+          const donors = [...Array(ncol).keys()].filter((k) => k !== j && colW[k] > mn[k]);
+          const slack = donors.reduce((a, k) => a + (colW[k] - mn[k]), 0);
+          if (slack < need) continue;
+          const trial = colW.map((v, k) => (k === j ? v + need : donors.includes(k) ? v - need * (v - mn[k]) / slack : v));
+          if (cost(trial) < cost(colW)) colW = trial;
+        }
         const lh = size * TLH;
         const rowH = cells.map((r) => Math.max(...r.map((c, j) => countLines(c, size, colW[j] - padPt))) * lh / 72 + padV * 2);
         const border = () => [{ type: "none" }, { type: "none" }, { type: "solid", pt: 0.75, color: C.rule }, { type: "none" }];
