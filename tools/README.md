@@ -39,3 +39,6 @@ Added 2026-11-09 (round 34):
   most) when its estimated height doesn't fit. Needs `pptxgenjs` on `NODE_PATH`
   and `PPTX_SKILL` pointing at the pptx skill directory (for `apply_theme.js`).
   It handles only what the statistics talk uses: no images, Mermaid or blockquotes.
+  After writing, it keeps only the first `<a:pPr>` of each paragraph (pptxgenjs
+  writes one per run, which hid the bullet of any item with bold or code) and
+  sets bullet color to the body color. Round 35 added this fix.

@@ -106,7 +106,7 @@ const isWide = (c) => (c >= 0x2e80 && c <= 0x9fff) || (c >= 0x3000 && c <= 0x303
 function charW(ch, mono) {
   const c = ch.codePointAt(0);
   if (isWide(c)) return 1.0;
-  if (mono) return 0.55;
+  if (mono) return 0.6;
   if (ch === " ") return 0.3;
   if (/[iljtf.,:;'|!()\[\]]/.test(ch)) return 0.32;
   if (/[mwMW]/.test(ch)) return 0.88;
@@ -219,7 +219,7 @@ function renderSlide(pres, s, idx, report) {
         const ncol = cells[0].length;
         const Wpt = W * 72, padPt = padH * 72 * 2;
         const nat = [...Array(ncol)].map((_, j) => Math.max(...cells.map((r) => naturalW(r[j] || [], size))) + padPt);
-        const mn = [...Array(ncol)].map((_, j) => Math.max(size * 3, ...cells.map((r) => minWordW(r[j] || [], size))) + padPt);
+        const mn = [...Array(ncol)].map((_, j) => Math.max(size * 3, ...cells.map((r) => minWordW(r[j] || [], size) * 1.12)) + padPt);
         let colW;
         const sumNat = nat.reduce((a, v) => a + v, 0), sumMin = mn.reduce((a, v) => a + v, 0);
         if (sumNat <= Wpt) colW = nat.map((v) => v * Wpt / sumNat);
@@ -267,6 +267,30 @@ function renderSlide(pres, s, idx, report) {
   }
 }
 
+// pptxgenjs writes an <a:pPr> before every run of a paragraph, not just the
+// first. Extra ones are out of schema order, and their <a:buNone/> hides the
+// bullet. Keep only the paragraph's first <a:pPr>.
+async function dedupeParagraphProps(file) {
+  const JSZip = require("jszip");
+  const zip = await JSZip.loadAsync(fs.readFileSync(file));
+  let removed = 0;
+  for (const name of Object.keys(zip.files).filter((n) => /^ppt\/(slides|slideLayouts|slideMasters|notesSlides)\/[^/]+\.xml$/.test(n))) {
+    const xml = await zip.file(name).async("string");
+    const out = xml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (para, inner) => {
+      let seen = false;
+      const body = inner.replace(/<a:pPr\b[^>]*\/>|<a:pPr\b[^>]*>[\s\S]*?<\/a:pPr>/g, (m) => {
+        if (!seen) { seen = true; return m; }
+        removed++; return "";
+      });
+      // Bullets take the first run's color (teal when an item opens in bold); use the body color.
+      return "<a:p>" + body.replace(/<a:buSzPct /g, '<a:buClr><a:srgbClr val="' + C.ink + '"/></a:buClr><a:buSzPct ') + "</a:p>";
+    });
+    zip.file(name, out);
+  }
+  fs.writeFileSync(file, await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }));
+  return removed;
+}
+
 async function main() {
   const slides = parseSlides(md);
   const titleMatch = md.match(/^title:\s*(.*)$/m);
@@ -293,6 +317,7 @@ async function main() {
     renderSlide(pres, s, i + 1, report);
   });
   await pres.writeFile({ fileName: OUT });
+  await dedupeParagraphProps(OUT);
   await applyTheme(OUT, {
     name: "TradingDev", headFontFace: FONT, bodyFontFace: FONT,
     colors: { dk1: C.ink, lt1: "FFFFFF", dk2: C.dark, lt2: C.bg, accent1: C.accent, accent2: "D2714A", accent3: C.darkAccent, accent4: C.muted, accent5: C.rule, accent6: "166A65", hlink: C.accent, folHlink: C.accent },
